@@ -177,22 +177,56 @@ class DocketSelector:
                     self.screenshot_manager.capture_on_error(driver, "category_not_found")
                     raise
 
-                # Wait for specific docket options to appear
-                logger.info(f"Waiting for specific dockets to load...")
-                time.sleep(1)
+                # Wait for specific docket options to appear after page navigation
+                logger.info(f"Waiting for specific dockets page to load...")
+                time.sleep(3)  # Increased wait time for page navigation
 
-                # Find and click the specific docket
+                # Find and click the specific docket (try multiple selectors)
                 logger.info(f"Looking for specific docket: {specific_docket}")
+
+                # Take screenshot before searching
+                self.screenshot_manager.capture(driver, "before_searching_specific_docket")
+
                 try:
-                    docket_wait = WebDriverWait(driver, 10)
-                    docket_element = docket_wait.until(
-                        EC.element_to_be_clickable((By.XPATH, f'//*[contains(text(), "{specific_docket}")]'))
-                    )
+                    docket_wait = WebDriverWait(driver, 15)
+
+                    # Try multiple selectors for state links
+                    state_selectors = [
+                        f'//a[text()="{specific_docket}"]',  # Exact match for link
+                        f'//a[contains(text(), "{specific_docket}")]',  # Contains match for link
+                        f'//*[@href and contains(text(), "{specific_docket}")]',  # Any element with href containing text
+                        f'//*[text()="{specific_docket}"]',  # Exact text match
+                        f'//*[contains(text(), "{specific_docket}")]'  # General contains match
+                    ]
+
+                    docket_element = None
+                    for selector in state_selectors:
+                        try:
+                            logger.info(f"Trying state selector: {selector}")
+                            docket_element = docket_wait.until(
+                                EC.element_to_be_clickable((By.XPATH, selector))
+                            )
+                            logger.info(f"✓ Found specific docket with: {selector}")
+                            break
+                        except Exception as e:
+                            logger.debug(f"Selector failed: {selector} - {str(e)}")
+                            continue
+
+                    if not docket_element:
+                        logger.error("Failed to find specific docket with any selector")
+                        self.screenshot_manager.capture_on_error(driver, "specific_docket_not_found")
+                        raise Exception(f"Cannot find state: {specific_docket}")
+
                     logger.info(f"✓ Found specific docket: {specific_docket}")
+
+                    # Scroll into view before clicking
+                    driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", docket_element)
+                    time.sleep(0.5)
+
                     self.screenshot_manager.capture(driver, "before_clicking_specific_docket")
                     driver.execute_script("arguments[0].click();", docket_element)
                     logger.info(f"✓ Clicked on specific docket: {specific_docket}")
-                    time.sleep(1)
+                    time.sleep(2)
                     self.screenshot_manager.capture(driver, "after_clicking_specific_docket")
                 except Exception as e:
                     logger.error(f"Failed to find specific docket '{specific_docket}': {str(e)}")
