@@ -1,0 +1,87 @@
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Environment Variables
+.env
+.env.local
+.env.*.local
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.pyc
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Logs
+logs/
+*.log
+*.log.*
+
+# Screenshots
+screenshots/
+*.png
+*.jpg
+*.jpeg
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*.swn
+.vscode/*
+.idea/*
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*~
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+.eggs/
+
+# Node modules
+node_modules/
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+*.cover
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# Selenium
+geckodriver.log
+chromedriver.log
+
+# Debug files
+debug_page_source.html
+debug_page_after_content_types.html
+*.html.debug
+
+# Cache
+.cache/
+*.cache
+
+# Windows specific
+$RECYCLE.BIN/
+*.lnk
