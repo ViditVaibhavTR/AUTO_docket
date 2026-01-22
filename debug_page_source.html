@@ -1,0 +1,425 @@
+<html dir="ltr" lang="en"><head><meta http-equiv="origin-trial" content="A7vZI3v+Gz7JfuRolKNM4Aff6zaGuT7X0mf3wtoZTnKv6497cVMnhy03KDqX7kBz/q/iidW7srW31oQbBt4VhgoAAACUeyJvcmlnaW4iOiJodHRwczovL3d3dy5nb29nbGUuY29tOjQ0MyIsImZlYXR1cmUiOiJEaXNhYmxlVGhpcmRQYXJ0eVN0b3JhZ2VQYXJ0aXRpb25pbmczIiwiZXhwaXJ5IjoxNzU3OTgwODAwLCJpc1N1YmRvbWFpbiI6dHJ1ZSwiaXNUaGlyZFBhcnR5Ijp0cnVlfQ==">
+	<!-- Copyright 2019: Thomson Reuters. All Rights Reserved. Proprietary and Confidential information of Thomson Reuters. Disclosure, Use or Reproduction without the written authorization of Thomson Reuters is prohibited. -->
+	<meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=IE6"> 
+	<meta name="viewport" content="width=device-width">
+	<title>Westlaw Sign In | Thomson Reuters</title>
+
+	<link rel="shortcut icon" href="/Version2/images/favicon.ico?v=26.02.0">
+
+	
+		<link href="/Version2/Content/jquery-ui.min.css?v=26.02.0" rel="stylesheet" type="text/css">
+
+<link href="/Version2/Content/cosi.css?v=26.02.0" rel="stylesheet" type="text/css">
+
+<link href="https://fonts.googleapis.com/css?family=Source+Sans+Pro:300,400,600" rel="stylesheet" type="text/css">
+	
+			<script type="text/javascript" async="" charset="utf-8" src="https://www.gstatic.com/recaptcha/releases/PoyoqOPhxBO7pBk68S4YbpHZ/recaptcha__en.js" crossorigin="anonymous" integrity="sha384-CsMESSmpdyXn2oSFisDd6UA6lT/9DlfGd77o9JZlC2/zeLHxhb5UOwKTAkz7dFBg"></script><script src="/Version2/Scripts/JqueryV2/jquery-3.6.1.min.js?v=26.02.0" type="text/javascript"></script>
+			<script src="/Version2/Scripts/JqueryV2/jquery.validate-1.19.5.min.js?v=26.02.0" type="text/javascript"></script>
+			<script src="/Version2/Scripts/JqueryV2/jquery-ui-1.13.2.min.js?v=26.02.0" type="text/javascript"></script>
+		<script src="/Version2/Scripts/ApplicationV2/OnePass.js?v=26.02.0" type="text/javascript"></script>
+		<script src="/Version2/Scripts/ApplicationV2/jquery.validate.trgr.js?v=26.02.0" type="text/javascript"></script>
+		<script src="/Version2/Scripts/ApplicationV2/AlertDialog.js?v=26.02.0" type="text/javascript"></script>
+		<script src="/Version2/Scripts/ApplicationV2/Toast.js?v=26.02.0" type="text/javascript"></script>
+		<script src="/Version2/Scripts/ApplicationV2/jquery.antiforgery.min.js?v=26.02.0" type="text/javascript"></script>
+		<!--[if !lte IE 8]><!-->
+		<script src="/Version2/Scripts/JqueryV2/svg4everybody.min.js?v=26.02.0" type="text/javascript"></script>
+		<!--<![endif]-->
+
+<!--[if !lte IE 8]><!-->
+<script>svg4everybody();</script>
+<!--<![endif]-->
+
+
+	<script type="text/javascript">
+		OnePass.TextValidationMessage = "These characters are invalid: * &amp;lt; &amp;gt;";
+		OnePass.TextValidationNoAsteriskMessage = "These characters are invalid: &amp;lt; &amp;gt;";
+		OnePass.AjaxRequestTimeOut = 10000;
+
+			 OnePass.AjaxRequestTimeOut = 10000;
+
+		$.ajaxSetup({
+			timeout: OnePass.AjaxRequestTimeOut
+		});
+
+		OnePass.KeepAliveUrl = "/v2/keepalive?culture=en-US&productid=CBT&returnto=https%3A%2F%2F1.next.qed.westlaw.com%2FCosi%2FSignOn";
+		OnePass.StartSessionKeepAlive();
+	</script>
+	
+	
+
+	<link href="/Version2/Content/marketing.css?v=26.02.0" rel="stylesheet" type="text/css">
+	<script src="/Version2/Scripts/JqueryV2/jquery.showpassword.js?v=26.02.0" type="text/javascript"></script>
+	<script type="text/javascript" src="/Version2/Scripts/ApplicationV2/CapsLock.js?v=26.02.0"></script>
+	<script type="text/javascript" src="/Version2/Scripts/ApplicationV2/Home.js?v=26.02.0"></script>
+
+	
+
+	
+	<meta name="description" content="Use Westlaw legal research when being wrong is not an option. With Thomson Reuters Westlaw, you'll find legal information you need quickly, confidently, and know your research is complete using the world's most preferred online legal research service.">
+
+
+</head>
+<body class="full cosi" lang="en">
+	<div class="Page-wrapper">
+		
+
+		<div id="main" class="Flex-wrap Content-wrap" role="main">
+			
+
+			
+
+
+
+
+
+
+
+
+<div class="Flex-content">
+	
+<div class="PageHeader">
+	<div class="Cosi-logo Content-wrap--small">
+			<a href="http://www.thomsonreuters.com">
+				<svg role="img" width="193" height="30" focusable="false" aria-label="Thomson Reuters">
+					<use xlink:href="/Version2/images/svg-defs.svg?v=26.02.0#svg-TRLogo-Optimized"></use>
+					</svg><img src="/Version2/images/svg-TRLogo-Optimized.png?v=26.02.0">
+				
+			</a>
+	</div>
+	<div id="dynamicToastMessage"></div>
+</div>
+	<div class="Content-wrap--small">
+		<div class="Form--hasWrapper">
+<form action="/?productid=CBT&amp;lr=0&amp;culture=en-US&amp;returnto=https%3a%2f%2f1.next.qed.westlaw.com%2fCosi%2fSignOn&amp;tracetoken=0122260451080w5PMxQInd4vQjpqyVLXnR4NmJEuos0aBl1d8wDU6R5E8NYkTzqIm-gVIxR5W2Z29ukB6xqMzuXTM0DsRBvqGTiEcnPsPoDgy5z31SApLAHpvkC_LjM_psd99T7evmTlnKN-spJRYzK3PK8b8AZuHbNmVdp4oa7Vl5Ewk5XXGTLJNAR_zkd8-Vvu4yCenNg0LLce3y16WSwPGuLDShai72OjtkEfAme1Oa_O-dxkZAj-4fOm4ka4mYR_L4stZOyJLnbNBTkAOznMxMk2GrXOi6XibTegs2Pyhr7tp3xTEaTO5aF9heI4No9Hu0BrjIZktKrG5dXK447WQOnQ5EKr0CiZsn_2w98ZTQrl5k8j-2t3a7gnxRNkacpXfzj6N6mq7&amp;bhcp=1" id="form0" method="post" novalidate="novalidate"><input name="__RequestVerificationToken" type="hidden" value="3d-5N770NkFK50DXYUmUB-EaA5PBFKS836DGK5ERFVt4f0AKK4Ulvjz981PX39X7FNxxt4OOxRR3fWwsYnqu2U3vbIs1"><input id="IsCDNAvailable" name="IsCDNAvailable" type="hidden" value="False"><input id="IsCloudAccessible" name="IsCloudAccessible" type="hidden" value="False"><input id="MinutesToMidnight" name="MinutesToMidnight" type="hidden" value="460"><input id="OIDCStartUrl" name="OIDCStartUrl" type="hidden" value="/v2/migrate/oidc?sessionType=1&amp;culture=en-US&amp;productid=CBT&amp;returnto=https%3A%2F%2F1.next.qed.westlaw.com%2FCosi%2FSignOn"><input id="ViewProductCode" name="ViewProductCode" type="hidden" value="CBT"><input id="TraceToken" name="TraceToken" type="hidden" value="0122260451080w5PMxQInd4vQjpqyVLXnR4NmJEuos0aBl1d8wDU6R5E8NYkTzqIm-gVIxR5W2Z29ukB6xqMzuXTM0DsRBvqGTiEcnPsPoDgy5z31SApLAHpvkC_LjM_psd99T7evmTlnKN-spJRYzK3PK8b8AZuHbNmVdp4oa7Vl5Ewk5XXGTLJNAR_zkd8-Vvu4yCenNg0LLce3y16WSwPGuLDShai72OjtkEfAme1Oa_O-dxkZAj-4fOm4ka4mYR_L4stZOyJLnbNBTkAOznMxMk2GrXOi6XibTegs2Pyhr7tp3xTEaTO5aF9heI4No9Hu0BrjIZktKrG5dXK447WQOnQ5EKr0CiZsn_2w98ZTQrl5k8j-2t3a7gnxRNkacpXfzj6N6mq7">				<div class="Form-content" role="form">
+					
+	<h1 class="CustomFont Cosi-header">Westlaw Classic</h1>
+
+	<div class="Cosi-signIn">
+			<div class="Signon-item">
+				<span class="Icon-wrapper Icon-wrapper--large">
+					<svg role="img" class="Icon-svg" focusable="false" aria-hidden="true">
+						<use xlink:href="/Version2/images/svg-defs.svg?v=26.02.0#svg-Locked"></use>
+					</svg>
+				</span>
+				Sign in using OnePass
+			</div>
+			</div>
+
+					
+
+					
+
+
+					
+
+					<div class="Form">
+						<div class="Form-textSelect">
+							<label class="InlineLabel" for="Username">Username</label>
+							<div>
+								<input aria-describedby="helpertext" aria-required="true" autocapitalize="off" autocomplete="off" autocorrect="off" class="valid" id="Username" name="Username" type="text" value="" aria-invalid="false">
+								<span aria-live="assertive" class="field-validation-valid InlineError-message" id="Username_validationMessage" role="status"></span>
+							</div>
+						</div>
+						<div class="Form-textSelect">
+							<label class="InlineLabel" for="Password">Password</label>		
+							<div>
+<div class="Password-wrap"><input aria-describedby="helpertext Password-error" autocapitalize="off" autocomplete="off" autocorrect="off" class="Password-input validation-error" data-typetoggle="#Password_showtext" id="Password" name="Password" type="password" aria-invalid="true"><input type="text" class="Password-input valid" name="Password-clone" id="Password-clone" autocomplete="off" autocapitalize="off" autocorrect="off" aria-describedby="helpertext" style="display: none;"><div class="Form-inlineCheckboxWrapper"><span class="Form-inlineCheckbox"><input id="Password_showtext" type="checkbox"><label for="Password_showtext">Show<span class="u-hiddenVisually">Password</span></label></span></div></div>                                <span aria-live="assertive" class="field-validation-valid InlineError-message" id="Password_validationMessage" role="status"><span id="Password-error" class="validation-error">Enter a password.</span></span>
+							</div>
+							<div aria-live="rude" class="capslockindicator" id="Password_CapsLock_validationMessage" style="display: none;"><span>Caps Lock is on.</span></div>
+						</div>
+						
+<div class="Form-textSelect">
+		<div class="CheckboxList">
+			<input id="SaveUsername" name="SaveUsername" onclick="Home.SelectOneCheckbox(this)" type="checkbox" value="true"><input name="SaveUsername" type="hidden" value="false">
+			<label for="SaveUsername">Save username</label>
+		</div>
+			<div class="CheckboxList">
+				<input id="SaveUsernamePassword" name="SaveUsernamePassword" onclick="Home.SelectOneCheckbox(this)" type="checkbox" value="true"><input name="SaveUsernamePassword" type="hidden" value="false">
+				<label for="SaveUsernamePassword">Save username and password</label>
+			</div>
+			<div class="CheckboxList RememberMe">
+				<div>
+					<input id="SuperRememberMe" name="SuperRememberMe" type="checkbox" value="true"><input name="SuperRememberMe" type="hidden" value="false">
+					<label for="SuperRememberMe" id="SuperRememberMeLabel">Remember me</label>
+				</div>
+				
+			</div>
+<input id="SuperRememberMeProductKey" name="SuperRememberMeProductKey" type="hidden" value="45f89a2d53294f79a9dfd2f39011ef24">			<div id="superRememberMeMobileHint" class="mobileHint u-none">
+				'Remember me' will skip this sign-in page on this browser. You can undo this from the Security page in your OnePass profile.
+			</div>
+			<div id="superRememberMeGenericError" class="u-none" style="display: none;">
+				'Remember me' is not available for your profile right now. 
+			</div>
+			<div id="superRememberMeValidatorError" class="u-none" style="display: none;">
+				'Remember me' is not available for your profile right now. 
+			</div>
+			<div id="superRememberMeNotSupported" class="u-none" style="display: none;">
+				'Remember me' is not supported by this browser.
+			</div>
+			<div id="superRememberMeNotAllowed" class="u-none" style="display: none;">
+				'Remember me' is not allowed by your firm’s security settings.
+			</div>
+</div>
+
+						
+<input id="SiteKey" name="SiteKey" type="hidden" value="6LcpWP8SAAAAALfNoowO8w6VcQ5wsA-jDheXYvjr">
+<input id="CultureCode" name="CultureCode" type="hidden" value="en">
+<input id="OverrideCaptchaFlags" name="OverrideCaptchaFlags" type="hidden" value="False">
+
+<div class="Form">
+	<div class="Recaptcha Form-textSelect">
+		<div id="captcha"></div>
+		<div class="inputfieldcontainer">
+				<script src="https://www.google.com/recaptcha/api.js?render=explicit&amp;hl=en" async="" defer=""></script>
+
+		</div>
+	</div>
+</div>
+					</div>
+					<div class="ButtonBar ButtonBar--hasLink" role="presentation">
+						<div class="ButtonBar-item">
+							<button type="submit" value="submit" name="SignIn" id="SignIn" class="Button Button--raised Button--primary Button--large">Sign in</button>
+						</div>
+					</div>
+					<div class="Form">
+						<div class="Form-textSelect">
+							<ul class="Cosi-FormExtras-NoBorder">
+								<li>
+									<a href="https://onepassqa.thomsonreuters.com/v3/forgot/username?productid=CBT&amp;viewproductid=CBT&amp;culture=en&amp;returnto=https%3A%2F%2Fsignon.qa.thomsonreuters.com%2F%3Fproductid%3DCBT%26lr%3D0%26culture%3Den-US%26returnto%3Dhttps%253a%252f%252f1.next.qed.westlaw.com%252fCosi%252fSignOn">Forgot username?</a><br>
+								</li>
+								<li>
+									<a href="https://onepassqa.thomsonreuters.com/v3/forgot/password?productid=CBT&amp;viewproductid=CBT&amp;culture=en&amp;returnto=https%3A%2F%2Fsignon.qa.thomsonreuters.com%2F%3Fproductid%3DCBT%26lr%3D0%26culture%3Den-US%26returnto%3Dhttps%253a%252f%252f1.next.qed.westlaw.com%252fCosi%252fSignOn">Forgot password?</a>
+								</li>
+							</ul>
+
+						</div>
+					</div>
+					
+	<ul class="Cosi-FormExtras">
+			<li>
+				<a href="https://onepassqa.thomsonreuters.com/v3/new?from=cosi&amp;fromlink=addreg&amp;ttd=01222605503907xdIVm2QpgfRXyJOTsgHh4xlF5tE_Y0d35TNwCKP64rnIge0ztoC7ZxrX8_9uI4v76K1CLoPk3Get8inVuXFGHVW1Imk4iLH5Q7AncLoI031_-Wyix03so-d2f0H7Q_YckcKuoNVhAD1LPsDF0AlIRqaKC0LQzxOeHUEVRI3_ElenyDKBeolz6c6-2XRpmeB1UWeNN9ZZ1ZpBC_IbWR0IOm9k9exv_-bbxi8WGsePFB3Xpq0Dp_gVm0Fxcfv7TLONwvv9yzcsicoTf1CfPIlkkY1YaVR52zfwwjUKrFofygnkEcKgrfEc6o5FGxuoxPMJg28cgRiJgFmBMS_RP0qjQ&amp;productid=CBT&amp;viewproductid=CBT&amp;culture=en&amp;returnto=https%3A%2F%2Fsignon.qa.thomsonreuters.com%2F%3Fproductid%3DCBT%26lr%3D0%26culture%3Den-US%26returnto%3Dhttps%253a%252f%252f1.next.qed.westlaw.com%252fCosi%252fSignOn" target="_self">Add registration key</a>
+			</li>
+		<li>
+			<a href="https://onepassqa.thomsonreuters.com/v3/new?from=cosi&amp;ttd=01222605503907xdIVm2QpgfRXyJOTsgHh4xlF5tE_Y0d35TNwCKP64rnIge0ztoC7ZxrX8_9uI4v76K1CLoPk3Get8inVuXFGHVW1Imk4iLH5Q7AncLoI031_-Wyix03so-d2f0H7Q_YckcKuoNVhAD1LPsDF0AlIRqaKC0LQzxOeHUEVRI3_ElenyDKBeolz6c6-2XRpmeB1UWeNN9ZZ1ZpBC_IbWR0IOm9k9exv_-bbxi8WGsePFB3Xpq0Dp_gVm0Fxcfv7TLONwvv9yzcsicoTf1CfPIlkkY1YaVR52zfwwjUKrFofygnkEcKgrfEc6o5FGxuoxPMJg28cgRiJgFmBMS_RP0qjQ&amp;productid=CBT&amp;viewproductid=CBT&amp;culture=en&amp;returnto=https%3A%2F%2Fsignon.qa.thomsonreuters.com%2F%3Fproductid%3DCBT%26lr%3D0%26culture%3Den-US%26returnto%3Dhttps%253a%252f%252f1.next.qed.westlaw.com%252fCosi%252fSignOn" target="_self">Create OnePass profile</a>
+		</li>
+		<li>
+			<a href="https://onepassqa.thomsonreuters.com/v3/?ttd=01222605503907xdIVm2QpgfRXyJOTsgHh_lF9kA1Gutl_SwUvCUSXe1nA9n43JV_IdTGhxezzUWhb0Y_yk1wGe1RNzLLY15y4ZDnnNbwfATrOyhpvsa7_l-jl2zgGp-9AX3OIk-yPFESkzBFdSo_a4EwWEyGCq21SX9yO1MqcbyIdj4ilQPwn4h7VxQql39RWhRa72bqgJ1ecFkvHSUcL7n_hTaMXixex0nodxndOHuarRAvH_8NJKYpmo7eU87o2ML-sYlxUy3qMqWNXv7x2c0PTYONlLOPzCDfaPwvtpfJa5rE8Gq7blJCnEEIIBrQoz4STrjhYupXzZZ8hkKEis_ApS-b6C4UfA&amp;productid=CBT&amp;viewproductid=CBT&amp;culture=en&amp;returnto=https%3A%2F%2Fsignon.qa.thomsonreuters.com%2F%3Fproductid%3DCBT%26lr%3D0%26culture%3Den-US%26returnto%3Dhttps%253a%252f%252f1.next.qed.westlaw.com%252fCosi%252fSignOn" target="_self">Update OnePass profile</a>
+		</li>
+					<li>
+				<a href="https://legal.thomsonreuters.com/en/support/onepass" target="_self">Learn about OnePass</a>
+			</li>
+	</ul>
+
+				</div>
+				<script type="text/javascript">
+					CapsLock.BindElement("Password")
+					$(function() {
+			// call the validate method on our form, and pass in our explicit options
+			$("#form0").validate({
+				ignore: ":hidden",
+				onkeyup: false,
+				rules: {
+					Password: {
+						rangelength:[8, 64],
+						invalidchars:"<>＜＞",
+						required:true
+					},
+					Username: {
+						invalidchars:"<>＜＞",
+						rangelength:[6, 70],
+						required:true
+					}
+				},
+				messages: {
+					Password: {
+						rangelength:"The password is too short or too long.",
+						invalidchars:"These characters are invalid: \u0026lt; \u0026gt;",
+						required:"Enter a password."
+					},
+					Username: {
+						invalidchars:"These characters are invalid: \u0026lt; \u0026gt;",
+						rangelength:"The username is too short or too long.",
+						required:"Enter a username."
+					}
+				},
+				submitHandler: function(form) {if (!this.beenSubmitted) {this.beenSubmitted = true;form.submit();}},
+				errorClass: "validation-error",
+				errorElement: "span",
+				errorPlacement: function(error, element) {
+					if (element.attr("name") == "Password") {
+						$("#Password_validationMessage").empty();
+						error.appendTo("#Password_validationMessage");
+						return;
+					}
+
+					if (element.attr("name") == "Username") {
+						$("#Username_validationMessage").empty();
+						error.appendTo("#Username_validationMessage");
+						return;
+					}
+
+					var elementName=element.attr("name");
+					if (elementName.endsWith("-clone")) {
+						elementName = elementName.substring(0,elementName.length-6);
+					}
+					if ($("#"+elementName+"_validationMessage").length > 0) {
+						$("#"+elementName+"_validationMessage").empty();
+						error.appendTo("#"+elementName+"_validationMessage");
+						return;
+					}
+
+					error.insertAfter(element);
+				}
+
+			});
+$("#Username").trigger("focus");
+		});
+
+				</script>
+</form>									<script type="text/javascript">
+				Home.BindMidnightTime();
+			</script>
+		</div>
+		
+<div class="Form--additionalInformation">
+	<div>OR</div>
+	<ul>
+			<li>
+				<a class="Button Button--cosiLinks" href="/v2/spinit/1/email?tracetoken=0122260451080w5PMxQInd4vQjpqyVLXnR4NmJEuos0aBl1d8wDU6R5E8NYkTzqIm-gVIxR5W2Z29ukB6xqMzuXTM0DsRBvqGTiEcnPsPoDgy5z31SApLAHpvkC_LjM_psd99T7evmTlnKN-spJRYzK3PK8b8AZuHbNmVdp4oa7Vl5Ewk5XXGTLJNAR_zkd8-Vvu4yCenNg0LLce3y16WSwPGuLDShai72OjtkEfAme1Oa_O-dxkZAj-4fOm4ka4mYR_L4stZOyJLnbNBTkAOznMxMk2GrXOi6XibTegs2Pyhr7tp3xTEaTO5aF9heI4No9Hu0BrjIZktKrG5dXK447WQOnQ5EKr0CiZsn_2w98ZTQrl5k8j-2t3a7gnxRNkacpXfzj6N6mq7&amp;culture=en-US&amp;productid=CBT&amp;returnto=https%3A%2F%2F1.next.qed.westlaw.com%2FCosi%2FSignOn">Access with single sign-on</a>
+			</li>
+			</ul>
+</div>
+
+	</div>
+</div>
+	<div class="Flex-sidebar">
+		<div class="Cosi-ads">
+			
+<div>
+	<link rel="stylesheet" href="https://www.thomsonreuters.com//content/dam/emcm/custom/one-pass-banner2.zip/_jcr_content/contents/css/banner.css">
+	<link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&amp;family=Source+Sans+3:ital,wght@0,200..900;1,200..900&amp;display=swap" rel="stylesheet">
+	<div class="banner" style="background-image: linear-gradient(290.81deg, rgba(0, 0, 0, 0) 63.19%, rgba(0, 0, 0, 0.49) 97.4%), url('https://www.thomsonreuters.com//content/dam/emcm/custom/one-pass-banner2.zip/_jcr_content/contents/img/backround.jpg');">
+		<div class="banner-text">
+			Draft stronger legal documents in half the time
+		</div>
+		<a target="_blank" href="https://tmsnrt.rs/cocounseldrafting" class="banner-button">Request a demo</a>    
+	</div>
+</div>
+<div>
+	<div class="banner" style="background-color: #d54002; background-image: url('https://www.thomsonreuters.com//content/dam/emcm/custom/one-pass-banner2.zip/_jcr_content/contents/img/background.png');">
+		<div class="banner-text">
+			Need help <span class="logging-in-text">logging in?</span>
+		</div>
+		<a target="_blank" href="https://tmsnrt.rs/OnePassHowTo" class="banner-button-support top-button" aria-label="Read our FAQ about signing in">Read our FAQ</a>
+		<a target="_blank" href="https://tmsnrt.rs/OnePassHowToVideo" class="banner-button-support bottom-button" aria-label="Watch an onboarding video about signing in">Watch Onboarding video</a>
+	</div>
+</div>
+
+
+
+    
+    
+    
+    
+
+    
+    
+
+
+
+
+		</div>
+	</div>
+
+
+<script type="text/javascript">
+	$(function () {
+		var checkedCaptcha = false;
+		var captchaIsAlreadyDisplayed = false;
+
+		$('#Password').showPassword();
+				var startDisabled = false;
+            if (Home.SupportsHtml5LocalStorage())
+		{
+			Home.BindSuperRememberMeCheckbox();
+			Home.BindSuperRememberMeAndCaptchaUserValidation(captchaIsAlreadyDisplayed);
+
+			if ($('#Username').val().length > 0) {
+				Home.CheckUserRememberMeAndCaptcha(true);
+			}
+
+			checkedCaptcha = true;
+			if (startDisabled)
+			{
+				Home.DisableSuperRememberMeCheckbox('notallowed');
+			}
+		}
+		else
+		{
+			Home.DisableSuperRememberMeCheckbox('notsupported');
+		}
+
+		if (!checkedCaptcha && !captchaIsAlreadyDisplayed)
+		{
+			Home.BindCaptchaUserValidation();
+
+			if ($('#Username').val().length > 0) {
+				Home.CheckUserRememberMeAndCaptcha(false);
+			}
+		}
+	});
+</script>
+
+
+		</div>
+
+		
+<div id="footer" class="Footer" role="contentinfo">
+	<div class="Content-wrap">
+		<ul class="Copyright GlobalFooter-menu" x-ms-format-detection="none">
+				<li><a href="https://1.next.qed.westlaw.com/Copyright" target="onepassfooterlinks">© 2026</a> Thomson Reuters.</li>
+
+				<li>US Technical Support: 1-800-934-9378</li>
+
+		</ul>
+		<ul class="GlobalFooter-menu">
+				<li><a href="https://www.thomsonreuters.com/en/privacy-statement.html" target="onepassfooterlinks">Privacy</a></li>
+							<li><a href="https://1.next.qed.westlaw.com/Accessibility" target="onepassfooterlinks">Accessibility</a></li>
+								</ul>
+	</div>
+</div>
+
+<script type="text/javascript">
+	$(function () {
+		OnePass.BindSelectToAction($("#language"), "en", OnePass.ChangeLanguage);
+
+		// Hack to make language refresh with rest of page when clicking back button in Chrome
+		$("#language").val($("#language").find('option[selected]').val());
+	});
+</script>
+		
+	</div>
+	<script>
+		$(function() {
+			// bind a click event to the 'skip' link
+			$(".Skip-link").on("click", function(event){
+
+				// strip the leading hash and declare
+				// the content we're skipping to
+				var skipTo="#"+this.href.split('#')[1];
+
+				// Setting 'tabindex' to -1 takes an element out of normal
+				// tab flow but allows it to be focused via javascript
+				$(skipTo).attr('tabindex', -1).on('blur focusout', function () {
+
+					// when focus leaves this element,
+					// remove the tabindex attribute
+					$(this).removeAttr('tabindex');
+
+				}).trigger("focus"); // focus on the content container
+			});
+		});
+	</script>
+
+
+</body></html>

@@ -299,7 +299,7 @@ class DocketSelector:
                 if docket_number:
                     # Wait for docket number input field to appear
                     logger.info(f"Waiting for docket number input field...")
-                    time.sleep(3)
+                    time.sleep(1)  # Reduced from 3s - using explicit waits in selectors
 
                     # Find and fill the docket number input field
                     logger.info("=" * 60)
@@ -309,7 +309,7 @@ class DocketSelector:
                     self.screenshot_manager.capture(driver, "before_docket_number_input")
 
                     try:
-                        docket_wait = WebDriverWait(driver, 15)
+                        docket_wait = WebDriverWait(driver, 5)  # Reduced from 15s - working selectors are first
 
                         # Log ALL text inputs on the page for debugging
                         logger.info("LISTING ALL TEXT INPUTS ON PAGE:")
@@ -328,9 +328,13 @@ class DocketSelector:
                         # Try SPECIFIC selectors for the actual Docket Number field on the LEFT
                         logger.info("\nTrying specific selectors for 'Docket Number' field...")
                         input_selectors = [
+                            # PRIORITY: Known working selectors first for speed
+                            (By.ID, "co_search_advancedSearch_DN"),  # DN = Docket Number (WORKING)
+                            (By.NAME, "co_search_advancedSearch_DN"),  # DN = Docket Number (WORKING)
+                            (By.XPATH, '//label[contains(text(), "Docket Number")]/..//input'),  # WORKING
+                            # Fallback selectors
                             (By.ID, "docketNumber"),
                             (By.NAME, "docketNumber"),
-                            (By.XPATH, '//label[contains(text(), "Docket Number")]/..//input'),
                             (By.XPATH, '//label[text()="Docket Number"]/following-sibling::input'),
                             (By.XPATH, '//input[@placeholder="Docket Number"]'),
                             (By.XPATH, '//input[@id="docketNumber"]'),
@@ -388,7 +392,7 @@ class DocketSelector:
                         input_element.clear()
                         input_element.send_keys(docket_number)
                         logger.info(f"✓ Entered: {docket_number}")
-                        time.sleep(1)
+                        time.sleep(0.5)  # Reduced from 1s - just ensure text is entered
                         logger.info("Taking screenshot AFTER entering docket number...")
                         self.screenshot_manager.capture(driver, "after_entering_docket_number")
 
@@ -415,11 +419,13 @@ class DocketSelector:
                             pass
 
                         search_selectors = [
-                            # VERY SPECIFIC selectors for the TOP RIGHT orange search icon ONLY
-                            # Explicitly exclude KNOS buttons - the KNOS button has ID containing "KNOS"
+                            # PRIORITY: Known working selectors first for speed
+                            (By.ID, "searchButton"),  # Direct ID (FASTEST - WORKING)
+                            (By.XPATH, '//button[@id="searchButton"]'),  # Direct ID xpath (WORKING)
+                            (By.XPATH, '//div[contains(@class, "header") or contains(@class, "nav")]//button[contains(@aria-label, "Search") and not(contains(@aria-label, "KNOS"))]'),  # WORKING
+                            # Fallback selectors
                             (By.XPATH, '//button[contains(@class, "co_searchButton") and not(contains(@id, "KNOS"))]'),
                             (By.XPATH, '//button[@aria-label="Search Westlaw" and not(contains(@id, "KNOS"))]'),
-                            (By.XPATH, '//div[contains(@class, "header") or contains(@class, "nav")]//button[contains(@aria-label, "Search") and not(contains(@aria-label, "KNOS"))]'),
                             (By.XPATH, '//button[contains(@class, "co_search") and not(contains(@id, "KNOS")) and not(contains(@class, "advancedSearch"))]'),
                             (By.XPATH, '//button[@title="Search" and not(contains(@id, "KNOS"))]'),
                             (By.CSS_SELECTOR, 'button.co_searchButton:not([id*="KNOS"])'),
@@ -508,8 +514,8 @@ class DocketSelector:
                             driver.execute_script("arguments[0].click();", search_button)
                             logger.info(f"✓ Clicked search button (JavaScript click)")
 
-                        logger.info("Waiting 3 seconds for search results...")
-                        time.sleep(3)
+                        logger.info("Waiting 2 seconds for search results...")
+                        time.sleep(2)  # Reduced from 3s - just ensure click is registered
                         logger.info("Taking screenshot AFTER clicking search...")
                         self.screenshot_manager.capture(driver, "after_clicking_search")
                         logger.info("=" * 60)
