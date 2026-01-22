@@ -69,15 +69,16 @@ def main():
         # Wait a moment for page to stabilize
         time.sleep(2)
 
-        # Test docket selection with California -> Southern District
+        # Test docket selection with California -> Southern District -> Docket Number
         logger.info("Step 6: Attempting to select docket...")
-        logger.info("Testing: Dockets by State -> California -> Southern District")
+        logger.info("Testing: Dockets by State -> California -> Southern District -> 1:25-CV-01815")
         docket_selector = DocketSelector()
         success = docket_selector.select_docket(
             driver,
             category="Dockets by State",
             specific_docket="California",
-            district="Southern District"
+            district="Southern District",
+            docket_number="1:25-CV-01815"
         )
 
         if success:
@@ -85,6 +86,7 @@ def main():
             logger.info("=" * 60)
             logger.info("✓✓✓ DOCKET SELECTION TEST PASSED! ✓✓✓")
             logger.info("Selected: Dockets by State -> California -> Southern District")
+            logger.info("Docket Number: 1:25-CV-01815")
             logger.info("=" * 60)
         else:
             logger.error("Docket selection returned False")

@@ -1,6 +1,6 @@
 Traceback (most recent call last):
-  File "C:\Users\C303190\OneDrive - Thomson Reuters Incorporated\Desktop\AUTO DOCKET\app\test_docket_selection.py", line 13, in <module>
-    from src.config.settings import settings
-  File "C:\Users\C303190\OneDrive - Thomson Reuters Incorporated\Desktop\AUTO DOCKET\app\src\config\settings.py", line 8, in <module>
-    from dotenv import load_dotenv
-ModuleNotFoundError: No module named 'dotenv'
+  File "C:\Users\C303190\OneDrive - Thomson Reuters Incorporated\Desktop\AUTO DOCKET\app\test_docket_selection.py", line 14, in <module>
+    from src.automation.browser import BrowserManager
+  File "C:\Users\C303190\OneDrive - Thomson Reuters Incorporated\Desktop\AUTO DOCKET\app\src\automation\browser.py", line 12, in <module>
+    from webdriver_manager.chrome import ChromeDriverManager
+ModuleNotFoundError: No module named 'webdriver_manager'
