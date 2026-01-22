@@ -296,7 +296,7 @@ def main():
 
         st.rerun()
 
-    elif st.session_state.login_completed and not st.session_state.show_docket_categories and not st.session_state.docket_running and not st.session_state.completed and not st.session_state.get('navigate_to_dockets', False) and not st.session_state.get('show_district_selection', False):
+    elif st.session_state.login_completed and not st.session_state.show_docket_categories and not st.session_state.docket_running and not st.session_state.completed and not st.session_state.get('navigate_to_dockets', False) and not st.session_state.get('show_district_selection', False) and not st.session_state.get('district_running', False):
         # Show docket selection prompt
         st.markdown("### ✅ Login completed successfully!")
         st.markdown("")
@@ -661,8 +661,11 @@ def main():
 
         logger.info(f"🔵 District selection returned: {result}")
 
-        # Mark as completed
+        # Mark as completed and reset all phase flags
         st.session_state.district_running = False
+        st.session_state.show_district_selection = False  # Reset this flag
+        st.session_state.docket_running = False  # Ensure this is also False
+        st.session_state.show_docket_categories = False  # Ensure this is also False
         st.session_state.completed = True
         st.session_state.result = result
         st.rerun()
