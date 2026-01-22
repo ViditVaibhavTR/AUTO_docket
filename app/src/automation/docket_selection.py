@@ -20,15 +20,16 @@ class DocketSelector:
         """Initialize the docket selector."""
         self.screenshot_manager = ScreenshotManager()
 
-    def select_docket(self, driver, category=None, specific_docket=None) -> bool:
+    def select_docket(self, driver, category=None, specific_docket=None, district=None) -> bool:
         """
         Select "Dockets" from Content Types in WestLaw Precision,
-        and optionally select a specific category and docket.
+        and optionally select a specific category, docket, and district.
 
         Args:
             driver: Selenium WebDriver object
             category: Optional category name (e.g., "Dockets by State")
             specific_docket: Optional specific docket name (e.g., "California")
+            district: Optional district name (e.g., "Southern District")
 
         Returns:
             True if selection successful, False otherwise
@@ -42,6 +43,8 @@ class DocketSelector:
                 logger.info(f"Category: {category}")
             if specific_docket:
                 logger.info(f"Specific docket: {specific_docket}")
+            if district:
+                logger.info(f"District: {district}")
 
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
@@ -232,6 +235,62 @@ class DocketSelector:
                     logger.error(f"Failed to find specific docket '{specific_docket}': {str(e)}")
                     self.screenshot_manager.capture_on_error(driver, "specific_docket_not_found")
                     raise
+
+                # If district is provided, select the district
+                if district:
+                    # Wait for district options to appear
+                    logger.info(f"Waiting for district options to load...")
+                    time.sleep(3)
+
+                    # Find and click the district
+                    logger.info(f"Looking for district: {district}")
+                    self.screenshot_manager.capture(driver, "before_searching_district")
+
+                    try:
+                        district_wait = WebDriverWait(driver, 15)
+
+                        # Try multiple selectors for district links
+                        district_selectors = [
+                            f'//a[text()="{district}"]',  # Exact match for link
+                            f'//a[contains(text(), "{district}")]',  # Contains match for link
+                            f'//*[@href and contains(text(), "{district}")]',  # Any element with href
+                            f'//*[text()="{district}"]',  # Exact text match
+                            f'//*[contains(text(), "{district}")]'  # General contains match
+                        ]
+
+                        district_element = None
+                        for selector in district_selectors:
+                            try:
+                                logger.info(f"Trying district selector: {selector}")
+                                district_element = district_wait.until(
+                                    EC.element_to_be_clickable((By.XPATH, selector))
+                                )
+                                logger.info(f"✓ Found district with: {selector}")
+                                break
+                            except Exception as e:
+                                logger.debug(f"Selector failed: {selector} - {str(e)}")
+                                continue
+
+                        if not district_element:
+                            logger.error("Failed to find district with any selector")
+                            self.screenshot_manager.capture_on_error(driver, "district_not_found")
+                            raise Exception(f"Cannot find district: {district}")
+
+                        logger.info(f"✓ Found district: {district}")
+
+                        # Scroll into view before clicking
+                        driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", district_element)
+                        time.sleep(0.5)
+
+                        self.screenshot_manager.capture(driver, "before_clicking_district")
+                        driver.execute_script("arguments[0].click();", district_element)
+                        logger.info(f"✓ Clicked on district: {district}")
+                        time.sleep(2)
+                        self.screenshot_manager.capture(driver, "after_clicking_district")
+                    except Exception as e:
+                        logger.error(f"Failed to find district '{district}': {str(e)}")
+                        self.screenshot_manager.capture_on_error(driver, "district_selection_error")
+                        raise
 
             logger.info("Docket selection completed successfully")
             return True

@@ -232,6 +232,14 @@ def main():
         st.session_state.navigate_to_dockets = False
     if 'dockets_nav_complete' not in st.session_state:
         st.session_state.dockets_nav_complete = False
+    if 'state_selected' not in st.session_state:
+        st.session_state.state_selected = False
+    if 'show_district_selection' not in st.session_state:
+        st.session_state.show_district_selection = False
+    if 'selected_district' not in st.session_state:
+        st.session_state.selected_district = None
+    if 'district_running' not in st.session_state:
+        st.session_state.district_running = False
 
     # Main interface
     if not st.session_state.started and not st.session_state.completed and not st.session_state.login_completed:
@@ -288,7 +296,7 @@ def main():
 
         st.rerun()
 
-    elif st.session_state.login_completed and not st.session_state.show_docket_categories and not st.session_state.docket_running and not st.session_state.completed and not st.session_state.get('navigate_to_dockets', False):
+    elif st.session_state.login_completed and not st.session_state.show_docket_categories and not st.session_state.docket_running and not st.session_state.completed and not st.session_state.get('navigate_to_dockets', False) and not st.session_state.get('show_district_selection', False):
         # Show docket selection prompt
         st.markdown("### ✅ Login completed successfully!")
         st.markdown("")
@@ -527,19 +535,134 @@ def main():
                 time.sleep(2)
                 screenshot_manager.capture(driver, "after_clicking_state")
 
-                # Success!
-                result = "success"
+                # Success! Now show district selection
                 logger.info("✅ State selection completed successfully!")
+                st.session_state.docket_running = False
+                st.session_state.state_selected = True  # Mark state selection complete
+                st.session_state.show_district_selection = True  # Show district UI
+                st.success(f"✅ Successfully selected {st.session_state.selected_docket}!")
+                time.sleep(1)
+                st.rerun()
 
             except Exception as e:
                 logger.error(f"❌ State selection failed: {e}")
                 screenshot_manager.capture_on_error(driver, "state_selection_error")
+                st.session_state.completed = True
+                st.session_state.result = f"error: {e}"
+                if st.session_state.browser_manager:
+                    st.session_state.browser_manager.cleanup()
+                st.rerun()
+
+    elif st.session_state.show_district_selection and not st.session_state.district_running and not st.session_state.completed:
+        # Show district selection UI
+        st.markdown(f"### 📂 {st.session_state.selected_docket} - Select District")
+        st.markdown("")
+        st.markdown("Please select a district:")
+        st.markdown("")
+
+        # Show 4 district options
+        districts = ["Eastern District", "Northern District", "Southern District", "Western District"]
+
+        # Display district buttons
+        for district in districts:
+            if st.button(f"📄 {district}", key=f"district_{district.replace(' ', '_')}", use_container_width=True):
+                logger.info(f"🔵 User selected district: {district}")
+                st.session_state.selected_district = district
+                st.session_state.show_district_selection = False
+                st.session_state.district_running = True
+                st.rerun()
+
+        st.markdown("")
+        st.markdown("---")
+
+        # Back button
+        if st.button("⬅️ Back", key="back_from_districts", use_container_width=False):
+            st.session_state.show_district_selection = False
+            st.session_state.show_docket_categories = True
+            st.rerun()
+
+    elif st.session_state.district_running and not st.session_state.completed:
+        # Show district selection progress - Phase 3: Only District selection
+        logger.info(f"🟢 PHASE 3: Selecting {st.session_state.selected_district}")
+        st.markdown("### 🔄 Selecting district...")
+        st.markdown("")
+        st.markdown(f"**State:** {st.session_state.selected_docket}")
+        st.markdown(f"**District:** {st.session_state.selected_district}")
+        st.markdown("")
+        st.markdown("Please wait while we:")
+        st.markdown(f"1. Click '{st.session_state.selected_district}'")
+        st.markdown("")
+
+        # Execute only the district selection (State already clicked in Phase 2)
+        logger.info(f"🟡 Executing District Selection → {st.session_state.selected_district}")
+        with st.spinner(f"Selecting: {st.session_state.selected_district}..."):
+            try:
+                from selenium.webdriver.common.by import By
+                from selenium.webdriver.support.ui import WebDriverWait
+                from selenium.webdriver.support import expected_conditions as EC
+                from src.utils.screenshot import ScreenshotManager
+
+                driver = st.session_state.driver
+                screenshot_manager = ScreenshotManager()
+                wait = WebDriverWait(driver, 15)
+
+                # Wait for district options to be visible
+                logger.info("Waiting for district options to load...")
+                time.sleep(3)
+
+                # Click the specific district using multiple selectors
+                logger.info(f"Looking for district: {st.session_state.selected_district}")
+                screenshot_manager.capture(driver, "before_searching_district")
+
+                district_selectors = [
+                    f'//a[text()="{st.session_state.selected_district}"]',
+                    f'//a[contains(text(), "{st.session_state.selected_district}")]',
+                    f'//*[@href and contains(text(), "{st.session_state.selected_district}")]',
+                    f'//*[text()="{st.session_state.selected_district}"]',
+                    f'//*[contains(text(), "{st.session_state.selected_district}")]'
+                ]
+
+                district_element = None
+                for selector in district_selectors:
+                    try:
+                        logger.info(f"Trying district selector: {selector}")
+                        district_element = wait.until(
+                            EC.element_to_be_clickable((By.XPATH, selector))
+                        )
+                        logger.info(f"✓ Found district with: {selector}")
+                        break
+                    except Exception as e:
+                        logger.debug(f"Selector failed: {selector}")
+                        continue
+
+                if not district_element:
+                    screenshot_manager.capture_on_error(driver, "district_not_found")
+                    raise Exception(f"Cannot find district: {st.session_state.selected_district}")
+
+                logger.info(f"✓ Found district: {st.session_state.selected_district}")
+
+                # Scroll into view and click
+                driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", district_element)
+                time.sleep(0.5)
+                screenshot_manager.capture(driver, "before_clicking_district")
+                driver.execute_script("arguments[0].click();", district_element)
+                logger.info(f"✓ Clicked district: {st.session_state.selected_district}")
+                time.sleep(2)
+                screenshot_manager.capture(driver, "after_clicking_district")
+
+                # Success!
+                result = "success"
+                logger.info("✅ District selection completed successfully!")
+
+            except Exception as e:
+                logger.error(f"❌ District selection failed: {e}")
+                screenshot_manager.capture_on_error(driver, "district_selection_error")
                 result = f"error: {e}"
 
-        logger.info(f"🔵 State selection returned: {result}")
+        logger.info(f"🔵 District selection returned: {result}")
 
         # Mark as completed
-        st.session_state.docket_running = False
+        st.session_state.district_running = False
         st.session_state.completed = True
         st.session_state.result = result
         st.rerun()
@@ -550,7 +673,9 @@ def main():
             st.markdown("### ✅ Task done")
             st.markdown("")
             if st.session_state.selected_docket:
-                st.markdown(f"**Selected State Docket:** {st.session_state.selected_docket}")
+                st.markdown(f"**Selected State:** {st.session_state.selected_docket}")
+            if st.session_state.selected_district:
+                st.markdown(f"**Selected District:** {st.session_state.selected_district}")
         else:
             st.markdown("### ❌ Task failed")
             if hasattr(st.session_state, 'result'):
@@ -575,6 +700,10 @@ def main():
                 st.session_state.selected_docket = None
                 st.session_state.navigate_to_dockets = False
                 st.session_state.dockets_nav_complete = False
+                st.session_state.state_selected = False
+                st.session_state.show_district_selection = False
+                st.session_state.selected_district = None
+                st.session_state.district_running = False
                 if hasattr(st.session_state, 'result'):
                     delattr(st.session_state, 'result')
                 st.rerun()
