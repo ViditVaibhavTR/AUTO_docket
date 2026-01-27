@@ -390,9 +390,31 @@ class DocketSelector:
                         # Clear and enter the docket number
                         logger.info(f"Entering docket number: {docket_number}")
                         input_element.clear()
+                        time.sleep(0.3)  # Wait after clear before typing
+
+                        # Enter docket number and verify
                         input_element.send_keys(docket_number)
-                        logger.info(f"✓ Entered: {docket_number}")
-                        time.sleep(0.5)  # Reduced from 1s - just ensure text is entered
+                        time.sleep(0.5)  # Wait for input to register
+
+                        # Verify the value was entered correctly
+                        entered_value = input_element.get_attribute('value')
+                        logger.info(f"Value in field: '{entered_value}'")
+
+                        if entered_value != docket_number:
+                            logger.warning(f"Value mismatch! Expected: '{docket_number}', Got: '{entered_value}'")
+                            logger.info("Retrying with slower input...")
+                            input_element.clear()
+                            time.sleep(0.5)
+                            # Type character by character for reliability
+                            for char in docket_number:
+                                input_element.send_keys(char)
+                                time.sleep(0.05)  # Small delay between characters
+                            time.sleep(0.3)
+                            entered_value = input_element.get_attribute('value')
+                            logger.info(f"After retry, value in field: '{entered_value}'")
+
+                        logger.info(f"✓ Entered: {entered_value}")
+                        time.sleep(0.5)  # Ensure text is fully entered
                         logger.info("Taking screenshot AFTER entering docket number...")
                         self.screenshot_manager.capture(driver, "after_entering_docket_number")
 

@@ -240,6 +240,13 @@ def main():
         st.session_state.selected_district = None
     if 'district_running' not in st.session_state:
         st.session_state.district_running = False
+    # Phase 4: Docket number input
+    if 'show_docket_number_input' not in st.session_state:
+        st.session_state.show_docket_number_input = False
+    if 'docket_number' not in st.session_state:
+        st.session_state.docket_number = None
+    if 'docket_search_running' not in st.session_state:
+        st.session_state.docket_search_running = False
 
     # Main interface
     if not st.session_state.started and not st.session_state.completed and not st.session_state.login_completed:
@@ -296,7 +303,7 @@ def main():
 
         st.rerun()
 
-    elif st.session_state.login_completed and not st.session_state.show_docket_categories and not st.session_state.docket_running and not st.session_state.completed and not st.session_state.get('navigate_to_dockets', False) and not st.session_state.get('show_district_selection', False) and not st.session_state.get('district_running', False):
+    elif st.session_state.login_completed and not st.session_state.show_docket_categories and not st.session_state.docket_running and not st.session_state.completed and not st.session_state.get('navigate_to_dockets', False) and not st.session_state.get('show_district_selection', False) and not st.session_state.get('district_running', False) and not st.session_state.get('show_docket_number_input', False) and not st.session_state.get('docket_search_running', False):
         # Show docket selection prompt
         st.markdown("### ✅ Login completed successfully!")
         st.markdown("")
@@ -661,11 +668,216 @@ def main():
 
         logger.info(f"🔵 District selection returned: {result}")
 
-        # Mark as completed and reset all phase flags
+        # Mark Phase 3 complete and show Phase 4 (docket number input)
         st.session_state.district_running = False
-        st.session_state.show_district_selection = False  # Reset this flag
-        st.session_state.docket_running = False  # Ensure this is also False
-        st.session_state.show_docket_categories = False  # Ensure this is also False
+        st.session_state.show_docket_number_input = True  # NEW: Show Phase 4 UI
+        st.rerun()
+
+    elif st.session_state.show_docket_number_input and not st.session_state.docket_search_running and not st.session_state.completed:
+        # Phase 4 UI: Docket number input
+        st.markdown(f"### 🔍 Enter Docket Number")
+        st.markdown("")
+        st.markdown(f"**State:** {st.session_state.selected_docket}")
+        st.markdown(f"**District:** {st.session_state.selected_district}")
+        st.markdown("")
+        st.markdown("Please enter the docket number to search:")
+        st.markdown("")
+
+        # Docket number input field
+        docket_number_input = st.text_input(
+            "Docket Number",
+            placeholder="e.g., 1:25-CV-01815",
+            key="docket_number_input_field",
+            help="Enter the docket number in the format: X:YY-CV-NNNNN"
+        )
+
+        st.markdown("")
+
+        # Submit button
+        col1, col2, col3 = st.columns([1, 1, 1])
+        with col2:
+            if st.button("🔍 Search Docket", key="submit_docket_number", use_container_width=True, disabled=not docket_number_input):
+                logger.info(f"🔵 User submitted docket number: {docket_number_input}")
+                st.session_state.docket_number = docket_number_input
+                st.session_state.show_docket_number_input = False
+                st.session_state.docket_search_running = True
+                st.rerun()
+
+        st.markdown("")
+        st.markdown("---")
+
+        # Back button
+        if st.button("⬅️ Back", key="back_from_docket_input"):
+            st.session_state.show_docket_number_input = False
+            st.session_state.show_district_selection = True
+            st.rerun()
+
+    elif st.session_state.docket_search_running and not st.session_state.completed:
+        # Phase 4 Execution: Search with docket number
+        logger.info(f"🟢 PHASE 4: Searching docket number {st.session_state.docket_number}")
+        st.markdown("### 🔄 Searching docket...")
+        st.markdown("")
+        st.markdown(f"**State:** {st.session_state.selected_docket}")
+        st.markdown(f"**District:** {st.session_state.selected_district}")
+        st.markdown(f"**Docket Number:** {st.session_state.docket_number}")
+        st.markdown("")
+        st.markdown("Please wait while we:")
+        st.markdown(f"1. Enter docket number: {st.session_state.docket_number}")
+        st.markdown(f"2. Click the search button")
+        st.markdown("")
+
+        # Execute docket number search
+        logger.info(f"🟡 Executing Docket Search → {st.session_state.docket_number}")
+        with st.spinner(f"Searching for docket: {st.session_state.docket_number}..."):
+            try:
+                from selenium.webdriver.common.by import By
+                from selenium.webdriver.support.ui import WebDriverWait
+                from selenium.webdriver.support import expected_conditions as EC
+                from src.utils.screenshot import ScreenshotManager
+
+                driver = st.session_state.driver
+                screenshot_manager = ScreenshotManager()
+                wait = WebDriverWait(driver, 5)  # Optimized timeout
+
+                # Wait for page to be ready
+                logger.info("Waiting for docket number input field...")
+                time.sleep(1)
+
+                logger.info("=" * 60)
+                logger.info("FINDING DOCKET NUMBER INPUT FIELD")
+                logger.info("=" * 60)
+                screenshot_manager.capture(driver, "before_docket_number_input")
+
+                # Try optimized input selectors (working selectors first)
+                input_selectors = [
+                    (By.ID, "co_search_advancedSearch_DN"),  # WORKING - Fastest
+                    (By.NAME, "co_search_advancedSearch_DN"),  # WORKING
+                    (By.XPATH, '//label[contains(text(), "Docket Number")]/..//input'),  # WORKING
+                ]
+
+                input_element = None
+                for by, selector in input_selectors:
+                    try:
+                        logger.info(f"  Trying: {by}={selector}")
+                        input_element = wait.until(
+                            EC.presence_of_element_located((by, selector))
+                        )
+                        logger.info(f"  ✓ FOUND with {by}={selector}")
+                        break
+                    except:
+                        continue
+
+                if not input_element:
+                    screenshot_manager.capture_on_error(driver, "docket_input_not_found_CRITICAL")
+                    raise Exception("Cannot find docket number input field")
+
+                logger.info(f"✓ Found docket number input field: {input_element.get_attribute('id')}")
+
+                # Enter docket number
+                logger.info(f"Entering docket number: {st.session_state.docket_number}")
+                input_element.clear()
+                time.sleep(0.3)  # Wait after clear before typing
+
+                # Enter docket number and verify
+                input_element.send_keys(st.session_state.docket_number)
+                time.sleep(0.5)  # Wait for input to register
+
+                # Verify the value was entered correctly
+                entered_value = input_element.get_attribute('value')
+                logger.info(f"Value in field: '{entered_value}'")
+
+                if entered_value != st.session_state.docket_number:
+                    logger.warning(f"Value mismatch! Expected: '{st.session_state.docket_number}', Got: '{entered_value}'")
+                    logger.info("Retrying with slower input...")
+                    input_element.clear()
+                    time.sleep(0.5)
+                    # Type character by character for reliability
+                    for char in st.session_state.docket_number:
+                        input_element.send_keys(char)
+                        time.sleep(0.05)  # Small delay between characters
+                    time.sleep(0.3)
+                    entered_value = input_element.get_attribute('value')
+                    logger.info(f"After retry, value in field: '{entered_value}'")
+
+                logger.info(f"✓ Entered: {entered_value}")
+                time.sleep(0.5)  # Ensure text is fully entered
+                screenshot_manager.capture(driver, "after_entering_docket_number")
+
+                # Find and click search button
+                logger.info("=" * 60)
+                logger.info("FINDING ORANGE SEARCH BUTTON AT TOP RIGHT")
+                logger.info("=" * 60)
+                screenshot_manager.capture(driver, "before_searching_for_search_button")
+
+                # Close any open modals first
+                try:
+                    close_buttons = driver.find_elements(By.XPATH, '//button[contains(text(), "Close") or contains(@aria-label, "Close")]')
+                    for btn in close_buttons[:3]:  # Close max 3 modals
+                        try:
+                            btn.click()
+                            time.sleep(0.5)
+                        except:
+                            pass
+                except:
+                    pass
+
+                # Try optimized search button selectors (working selectors first)
+                search_selectors = [
+                    (By.ID, "searchButton"),  # FASTEST - Direct ID
+                    (By.XPATH, '//button[@id="searchButton"]'),  # WORKING
+                    (By.XPATH, '//div[contains(@class, "header") or contains(@class, "nav")]//button[contains(@aria-label, "Search") and not(contains(@aria-label, "KNOS"))]'),  # WORKING
+                ]
+
+                search_button = None
+                for by, selector in search_selectors:
+                    try:
+                        logger.info(f"Trying search button selector: {by}={selector}")
+                        search_button = wait.until(
+                            EC.element_to_be_clickable((by, selector))
+                        )
+                        logger.info(f"✓ Found search button with: {by}={selector}")
+                        break
+                    except:
+                        continue
+
+                if not search_button:
+                    screenshot_manager.capture_on_error(driver, "search_button_not_found_CRITICAL")
+                    raise Exception("Cannot find orange search button")
+
+                logger.info(f"✓ Found search button: {search_button.get_attribute('id')}")
+                screenshot_manager.capture(driver, "before_clicking_search")
+
+                # Click search button
+                logger.info("Clicking the orange search button...")
+                try:
+                    search_button.click()
+                    logger.info(f"✓ Clicked search button (regular click)")
+                except:
+                    driver.execute_script("arguments[0].click();", search_button)
+                    logger.info(f"✓ Clicked search button (JavaScript click)")
+
+                time.sleep(2)
+                screenshot_manager.capture(driver, "after_clicking_search")
+                logger.info("=" * 60)
+                logger.info("✓ SEARCH COMPLETED")
+                logger.info("=" * 60)
+
+                # Success!
+                result = "success"
+                logger.info("✅ Docket search completed successfully!")
+
+            except Exception as e:
+                logger.error(f"❌ Docket search failed: {e}")
+                screenshot_manager.capture_on_error(driver, "docket_search_error")
+                result = f"error: {e}"
+
+        logger.info(f"🔵 Docket search returned: {result}")
+
+        # Mark as completed
+        st.session_state.docket_search_running = False
+        st.session_state.show_district_selection = False
+        st.session_state.docket_running = False
+        st.session_state.show_docket_categories = False
         st.session_state.completed = True
         st.session_state.result = result
         st.rerun()
@@ -679,6 +891,9 @@ def main():
                 st.markdown(f"**Selected State:** {st.session_state.selected_docket}")
             if st.session_state.selected_district:
                 st.markdown(f"**Selected District:** {st.session_state.selected_district}")
+            if st.session_state.docket_number:
+                st.markdown(f"**Docket Number:** {st.session_state.docket_number}")
+                st.markdown(f"**Search Status:** ✅ Completed")
         else:
             st.markdown("### ❌ Task failed")
             if hasattr(st.session_state, 'result'):
