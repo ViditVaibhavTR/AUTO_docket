@@ -1,5 +1,5 @@
 """
-Gateway configuration module for setting Gateway Live External to True.
+Gateway configuration module for setting Gateway Live External to False (USER PRIORITIZED VALUE).
 """
 
 from selenium.webdriver.common.by import By
@@ -19,7 +19,7 @@ class GatewayConfigurator:
 
     def configure_gateway(self, driver) -> bool:
         """
-        Set Gateway Live External to True.
+        Set Gateway Live External to False (USER PRIORITIZED VALUE).
 
         Args:
             driver: Selenium WebDriver object
@@ -67,16 +67,16 @@ class GatewayConfigurator:
                                 logger.info("Gateway Live External checkbox already checked")
 
                         elif tag_name == "select":
-                            # Select "true" or "True" option for dropdown
+                            # PRIORITIZED: Set to False as per user requirement
                             select = Select(element)
                             try:
-                                select.select_by_value("true")
+                                select.select_by_value("False")
                             except:
                                 try:
-                                    select.select_by_visible_text("True")
+                                    select.select_by_visible_text("False")
                                 except:
-                                    select.select_by_visible_text("true")
-                            logger.info("Gateway Live External set to True (dropdown)")
+                                    select.select_by_visible_text("false")
+                            logger.info("Gateway Live External set to False (dropdown) - USER PRIORITIZED VALUE")
 
                         else:
                             # For text input, set value to "true"

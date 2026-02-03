@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API Connection Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .status {
+            padding: 20px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        button {
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+        }
+        button:hover { background: #0056b3; }
+        pre {
+            background: #f4f4f4;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 API Connection Test</h1>
+    <p>This page tests if your browser can connect to the API.</p>
+
+    <button onclick="testConnection()">Test Connection</button>
+
+    <div id="result"></div>
+
+    <script>
+        async function testConnection() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<div class="status info">Testing connection to http://127.0.0.1:8000...</div>';
+
+            try {
+                // Test 1: Fetch health endpoint
+                const response = await fetch('http://127.0.0.1:8000/health');
+                const data = await response.json();
+
+                resultDiv.innerHTML = `
+                    <div class="status success">
+                        <h3>✅ Connection Successful!</h3>
+                        <p>API is reachable and responding.</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                        <p><strong>Your frontend should work now!</strong></p>
+                        <p>Open <code>frontend_example.html</code></p>
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `
+                    <div class="status error">
+                        <h3>❌ Connection Failed</h3>
+                        <p><strong>Error:</strong> ${error.message}</p>
+                        <h4>Troubleshooting:</h4>
+                        <ol>
+                            <li>Make sure API server is running:
+                                <pre>uvicorn api.main:app --host 127.0.0.1 --port 8000 --reload</pre>
+                            </li>
+                            <li>Test in browser directly:
+                                <a href="http://127.0.0.1:8000/health" target="_blank">http://127.0.0.1:8000/health</a>
+                            </li>
+                            <li>Check browser console (F12) for detailed errors</li>
+                        </ol>
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-test on page load
+        window.onload = () => {
+            setTimeout(testConnection, 500);
+        };
+    </script>
+</body>
+</html>

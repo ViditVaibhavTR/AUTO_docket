@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Docket Alert Automation - Frontend Example</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .section h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.2em;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 500;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: background 0.3s;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #5568d3;
+        }
+
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+
+        .checkbox-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .checkbox-item input {
+            width: auto;
+        }
+
+        .session-info {
+            background: #e7f3ff;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #004085;
+        }
+
+        .api-docs-link {
+            text-align: center;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+
+        .api-docs-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .api-docs-link a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Docket Alert Automation</h1>
+        <p class="subtitle">FastAPI-powered automation system</p>
+
+        <!-- Health Check -->
+        <div class="section">
+            <h2>🏥 API Health Check</h2>
+            <button onclick="checkHealth()">Check API Status</button>
+            <div id="health-status" class="status"></div>
+        </div>
+
+        <!-- Start Automation -->
+        <div class="section">
+            <h2>🚀 Step 1: Start Automation</h2>
+            <p style="color: #666; margin-bottom: 15px;">This will login and configure the system</p>
+            <button onclick="startAutomation()" id="start-btn">Start Automation</button>
+            <div id="start-status" class="status"></div>
+            <div id="session-info" class="session-info" style="display: none;"></div>
+        </div>
+
+        <!-- Select State -->
+        <div class="section">
+            <h2>📂 Step 2: Select State</h2>
+            <div class="form-group">
+                <label for="state-select">Choose State:</label>
+                <select id="state-select">
+                    <option value="">-- Select State --</option>
+                    <option value="California">California</option>
+                    <option value="New York">New York</option>
+                    <option value="Texas">Texas</option>
+                </select>
+            </div>
+            <button onclick="selectState()" id="state-btn" disabled>Select State</button>
+            <div id="state-status" class="status"></div>
+        </div>
+
+        <!-- Select District -->
+        <div class="section">
+            <h2>🏛️ Step 3: Select District</h2>
+            <div class="form-group">
+                <label for="district-select">Choose District:</label>
+                <select id="district-select">
+                    <option value="">-- Select District --</option>
+                    <option value="Central District">Central District</option>
+                    <option value="Eastern District">Eastern District</option>
+                    <option value="Northern District">Northern District</option>
+                    <option value="Southern District">Southern District</option>
+                </select>
+            </div>
+            <button onclick="selectDistrict()" id="district-btn" disabled>Select District</button>
+            <div id="district-status" class="status"></div>
+        </div>
+
+        <!-- Search Docket -->
+        <div class="section">
+            <h2>🔍 Step 4: Search Docket Number</h2>
+            <div class="form-group">
+                <label for="docket-number">Docket Number:</label>
+                <input type="text" id="docket-number" placeholder="e.g., 1:25-CV-01815">
+            </div>
+            <button onclick="searchDocket()" id="search-btn" disabled>Search Docket</button>
+            <div id="search-status" class="status"></div>
+        </div>
+
+        <!-- Create Alert -->
+        <div class="section">
+            <h2>🔔 Step 5: Create Docket Alert</h2>
+            <button onclick="createAlert()" id="create-btn" disabled>Create Alert</button>
+            <div id="create-status" class="status"></div>
+        </div>
+
+        <!-- Complete Alert Setup -->
+        <div class="section">
+            <h2>📝 Step 6: Complete Alert Setup</h2>
+            <div class="form-group">
+                <label for="alert-name">Alert Name: *</label>
+                <input type="text" id="alert-name" placeholder="Enter alert name">
+            </div>
+            <div class="form-group">
+                <label for="alert-description">Description:</label>
+                <textarea id="alert-description" placeholder="Enter description (optional)"></textarea>
+            </div>
+            <div class="form-group">
+                <label for="alert-email">Email: *</label>
+                <input type="email" id="alert-email" placeholder="your.email@example.com">
+            </div>
+            <div class="form-group">
+                <label for="frequency">Frequency: *</label>
+                <select id="frequency">
+                    <option value="daily">Daily</option>
+                    <option value="weekdays">Weekdays (M-F)</option>
+                    <option value="weekly">Weekly</option>
+                    <option value="biweekly">Bi-Weekly</option>
+                    <option value="monthly">Monthly</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Alert Times (Central Time): *</label>
+                <div class="checkbox-group">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="time-5am" value="5am">
+                        <label for="time-5am">5am</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="time-12pm" value="12pm" checked>
+                        <label for="time-12pm">12pm</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="time-3pm" value="3pm">
+                        <label for="time-3pm">3pm</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="time-5pm" value="5pm">
+                        <label for="time-5pm">5pm</label>
+                    </div>
+                </div>
+            </div>
+            <button onclick="completeSetup()" id="complete-btn" disabled>Complete Alert Setup</button>
+            <div id="complete-status" class="status"></div>
+        </div>
+
+        <!-- Cleanup -->
+        <div class="section">
+            <h2>🧹 Cleanup Session</h2>
+            <button onclick="cleanupSession()" id="cleanup-btn" disabled>Cleanup & Close Browser</button>
+            <div id="cleanup-status" class="status"></div>
+        </div>
+
+        <!-- API Documentation Link -->
+        <div class="api-docs-link">
+            <p>📚 <a href="http://localhost:8000/docs" target="_blank">View Interactive API Documentation</a></p>
+            <p style="margin-top: 10px; font-size: 12px; color: #666;">
+                Make sure the API server is running: <code>python run_api.py</code>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://127.0.0.1:8000';
+        let sessionId = null;
+
+        // Utility function to show status
+        function showStatus(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.textContent = message;
+            element.className = `status ${type}`;
+        }
+
+        // Health Check
+        async function checkHealth() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                showStatus('health-status', `✅ API is ${data.status} - Version ${data.version}`, 'success');
+            } catch (error) {
+                showStatus('health-status', `❌ API is not reachable. Make sure it's running!`, 'error');
+            }
+        }
+
+        // Start Automation
+        async function startAutomation() {
+            const btn = document.getElementById('start-btn');
+            btn.disabled = true;
+            btn.textContent = 'Starting...';
+            showStatus('start-status', '⏳ Starting automation...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/automation/start`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ include_docket: false })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    sessionId = data.session_id;
+                    showStatus('start-status', `✅ ${data.message}`, 'success');
+                    document.getElementById('session-info').style.display = 'block';
+                    document.getElementById('session-info').textContent = `Session ID: ${sessionId}`;
+
+                    // Enable next step
+                    document.getElementById('state-btn').disabled = false;
+                } else {
+                    showStatus('start-status', `❌ ${data.detail}`, 'error');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showStatus('start-status', `❌ Error: ${error.message}`, 'error');
+                btn.disabled = false;
+            }
+
+            btn.textContent = 'Start Automation';
+        }
+
+        // Select State
+        async function selectState() {
+            const state = document.getElementById('state-select').value;
+            if (!state) {
+                alert('Please select a state');
+                return;
+            }
+
+            const btn = document.getElementById('state-btn');
+            btn.disabled = true;
+            showStatus('state-status', `⏳ Selecting ${state}...`, 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/docket/select`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        category: "Dockets by State",
+                        specific_docket: state
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('state-status', `✅ ${data.message}`, 'success');
+                    document.getElementById('district-btn').disabled = false;
+                } else {
+                    showStatus('state-status', `❌ ${data.detail}`, 'error');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showStatus('state-status', `❌ Error: ${error.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // Select District
+        async function selectDistrict() {
+            const state = document.getElementById('state-select').value;
+            const district = document.getElementById('district-select').value;
+            if (!district) {
+                alert('Please select a district');
+                return;
+            }
+
+            const btn = document.getElementById('district-btn');
+            btn.disabled = true;
+            showStatus('district-status', `⏳ Selecting ${district}...`, 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/district/select`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        state: state,
+                        district: district
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('district-status', `✅ ${data.message}`, 'success');
+                    document.getElementById('search-btn').disabled = false;
+                } else {
+                    showStatus('district-status', `❌ ${data.detail}`, 'error');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showStatus('district-status', `❌ Error: ${error.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // Search Docket
+        async function searchDocket() {
+            const docketNumber = document.getElementById('docket-number').value;
+            if (!docketNumber) {
+                alert('Please enter a docket number');
+                return;
+            }
+
+            const btn = document.getElementById('search-btn');
+            btn.disabled = true;
+            showStatus('search-status', `⏳ Searching for ${docketNumber}...`, 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/docket/search`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        docket_number: docketNumber
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('search-status', `✅ ${data.message}`, 'success');
+                    document.getElementById('create-btn').disabled = false;
+                } else {
+                    showStatus('search-status', `❌ ${data.detail}`, 'error');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showStatus('search-status', `❌ Error: ${error.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // Create Alert
+        async function createAlert() {
+            const btn = document.getElementById('create-btn');
+            btn.disabled = true;
+            showStatus('create-status', '⏳ Creating alert...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/alert/create`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('create-status', `✅ ${data.message}`, 'success');
+                    document.getElementById('complete-btn').disabled = false;
+                } else {
+                    showStatus('create-status', `❌ ${data.detail}`, 'error');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showStatus('create-status', `❌ Error: ${error.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // Complete Alert Setup
+        async function completeSetup() {
+            const alertName = document.getElementById('alert-name').value;
+            const alertDescription = document.getElementById('alert-description').value;
+            const alertEmail = document.getElementById('alert-email').value;
+            const frequency = document.getElementById('frequency').value;
+
+            if (!alertName || !alertEmail) {
+                alert('Please fill in required fields: Alert Name and Email');
+                return;
+            }
+
+            // Get selected times
+            const alertTimes = [];
+            if (document.getElementById('time-5am').checked) alertTimes.push('5am');
+            if (document.getElementById('time-12pm').checked) alertTimes.push('12pm');
+            if (document.getElementById('time-3pm').checked) alertTimes.push('3pm');
+            if (document.getElementById('time-5pm').checked) alertTimes.push('5pm');
+
+            if (alertTimes.length === 0) {
+                alert('Please select at least one alert time');
+                return;
+            }
+
+            const btn = document.getElementById('complete-btn');
+            btn.disabled = true;
+            showStatus('complete-status', '⏳ Completing alert setup...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/alert/complete-setup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        session_id: sessionId,
+                        alert_name: alertName,
+                        alert_description: alertDescription,
+                        user_email: alertEmail,
+                        frequency: frequency,
+                        alert_times: alertTimes
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('complete-status', `✅ ${data.message}`, 'success');
+                    document.getElementById('cleanup-btn').disabled = false;
+                } else {
+                    showStatus('complete-status', `❌ ${data.detail}`, 'error');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showStatus('complete-status', `❌ Error: ${error.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // Cleanup Session
+        async function cleanupSession() {
+            const btn = document.getElementById('cleanup-btn');
+            btn.disabled = true;
+            showStatus('cleanup-status', '⏳ Cleaning up session...', 'info');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/v1/session/cleanup`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: sessionId })
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    showStatus('cleanup-status', `✅ ${data.message}`, 'success');
+                    sessionId = null;
+                    // Reset all buttons
+                    location.reload();
+                } else {
+                    showStatus('cleanup-status', `❌ ${data.detail}`, 'error');
+                    btn.disabled = false;
+                }
+            } catch (error) {
+                showStatus('cleanup-status', `❌ Error: ${error.message}`, 'error');
+                btn.disabled = false;
+            }
+        }
+
+        // Auto-check health on page load
+        window.onload = function() {
+            checkHealth();
+        };
+    </script>
+</body>
+</html>

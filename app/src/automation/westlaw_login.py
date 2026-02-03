@@ -40,27 +40,24 @@ class WestLawLogin:
             # Wait for login page to load (reduced timeout)
             wait = WebDriverWait(driver, 5)
 
-            # OPTIMIZED: Try most common selectors first with direct find_element
-            # Try the working selector first based on logs: input[type="text"]
+            # PRIORITIZED: Use user-provided selectors first
             username_field = None
-            try:
-                username_field = wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'input[type="text"]')))
-                logger.info("Found username field with selector: input[type='text']")
-            except:
-                # Fallback selectors
-                username_selectors = [
-                    (By.NAME, "username"),
-                    (By.ID, "username"),
-                    (By.CSS_SELECTOR, 'input[name*="user"]')
-                ]
-                for by_type, selector in username_selectors:
-                    try:
-                        username_field = driver.find_element(by_type, selector)
-                        if username_field:
-                            logger.info(f"Found username field with selector: {selector}")
-                            break
-                    except:
-                        continue
+            username_selectors = [
+                (By.ID, "Username"),  # USER PRIORITIZED - Exact ID from HTML
+                (By.NAME, "Username"),  # USER PRIORITIZED - Exact name from HTML
+                (By.CSS_SELECTOR, 'input[type="text"]'),  # Fallback
+                (By.NAME, "username"),
+                (By.ID, "username"),
+                (By.CSS_SELECTOR, 'input[name*="user"]')
+            ]
+
+            for by_type, selector in username_selectors:
+                try:
+                    username_field = wait.until(EC.presence_of_element_located((by_type, selector)))
+                    logger.info(f"Found username field with selector: {by_type}={selector}")
+                    break
+                except:
+                    continue
 
             if not username_field:
                 logger.error("Username field not found")
@@ -70,24 +67,24 @@ class WestLawLogin:
             # Enter username (no clear needed - field should be empty)
             username_field.send_keys(settings.WESTLAW_USERNAME)
 
-            # Find password field - use direct selector (from logs: input[type="password"])
+            # PRIORITIZED: Use user-provided password selectors first
             password_field = None
-            try:
-                password_field = driver.find_element(By.CSS_SELECTOR, 'input[type="password"]')
-                logger.info("Found password field")
-            except:
-                password_selectors = [
-                    (By.NAME, "password"),
-                    (By.ID, "password")
-                ]
-                for by_type, selector in password_selectors:
-                    try:
-                        password_field = driver.find_element(by_type, selector)
-                        if password_field:
-                            logger.info(f"Found password field with selector: {selector}")
-                            break
-                    except:
-                        continue
+            password_selectors = [
+                (By.ID, "Password"),  # USER PRIORITIZED - Exact ID from HTML
+                (By.NAME, "Password"),  # USER PRIORITIZED - Exact name from HTML
+                (By.CSS_SELECTOR, 'input[type="password"]'),  # Fallback
+                (By.NAME, "password"),
+                (By.ID, "password")
+            ]
+
+            for by_type, selector in password_selectors:
+                try:
+                    password_field = driver.find_element(by_type, selector)
+                    if password_field:
+                        logger.info(f"Found password field with selector: {by_type}={selector}")
+                        break
+                except:
+                    continue
 
             if not password_field:
                 logger.error("Password field not found")
@@ -97,10 +94,13 @@ class WestLawLogin:
             # Enter password (no clear needed - field should be empty)
             password_field.send_keys(settings.WESTLAW_PASSWORD)
 
-            # Find sign in button - use working selector first (from logs: //button[contains(text(), "Sign in")])
+            # PRIORITIZED: Use user-provided sign in button selectors first
             signin_button = None
             signin_selectors = [
-                (By.XPATH, '//button[contains(text(), "Sign in")]'),  # WORKING - Use first!
+                (By.ID, "SignIn"),  # USER PRIORITIZED - Exact ID from HTML
+                (By.NAME, "SignIn"),  # USER PRIORITIZED - Exact name from HTML
+                (By.XPATH, '//button[@type="submit"][@id="SignIn"]'),  # USER PRIORITIZED - Combined selector
+                (By.XPATH, '//button[contains(text(), "Sign in")]'),  # Fallback
                 (By.XPATH, '//button[contains(text(), "Sign In")]'),
                 (By.CSS_SELECTOR, 'button[type="submit"]'),
                 (By.XPATH, '//input[@value="Sign in"]'),
@@ -129,11 +129,14 @@ class WestLawLogin:
             logger.info("Waiting for 'Select a client ID' page...")
             time.sleep(2)
 
-            # Find and fill client ID field with email
+            # PRIORITIZED: Use user-provided client ID field selectors first
             logger.info("Looking for client ID field...")
             client_id_field = None
             client_id_selectors = [
-                (By.CSS_SELECTOR, 'input[type="text"]'),
+                (By.ID, "co_clientIDTextbox"),  # USER PRIORITIZED - Exact ID from HTML
+                (By.NAME, "clientIdTextbox"),  # USER PRIORITIZED - Exact name from HTML
+                (By.CSS_SELECTOR, 'input.co_clientIDTextbox'),  # USER PRIORITIZED - Exact class from HTML
+                (By.CSS_SELECTOR, 'input[type="text"]'),  # Fallback
                 (By.CSS_SELECTOR, 'input[name*="client"]'),
                 (By.CSS_SELECTOR, 'input[placeholder*="client"]'),
                 (By.XPATH, '//input[@type="text"]')
@@ -143,7 +146,7 @@ class WestLawLogin:
                 try:
                     client_id_field = driver.find_element(by_type, selector)
                     if client_id_field and client_id_field.is_displayed():
-                        logger.info(f"Found client ID field with selector: {selector}")
+                        logger.info(f"Found client ID field with selector: {by_type}={selector}")
                         break
                 except:
                     continue
@@ -191,12 +194,15 @@ class WestLawLogin:
                 logger.info("Email re-entered")
                 time.sleep(1)
 
-            # Find and click "Start new session" button
+            # PRIORITIZED: Use user-provided start session button selectors first
             logger.info("Looking for 'Start new session' button...")
             start_session_button = None
             start_session_selectors = [
-                (By.XPATH, '//button[contains(text(), "Start new session")]'),  # CORRECT TEXT
-                (By.XPATH, '//input[@value="Start new session"]'),
+                (By.ID, "co_clientIDContinueButton"),  # USER PRIORITIZED - Exact ID from HTML
+                (By.CSS_SELECTOR, 'input.co_primaryBtn'),  # USER PRIORITIZED - Exact class from HTML
+                (By.XPATH, '//input[@type="button"][@id="co_clientIDContinueButton"]'),  # USER PRIORITIZED - Combined selector
+                (By.XPATH, '//input[@value="Start new session"]'),  # USER PRIORITIZED - Exact value from HTML
+                (By.XPATH, '//button[contains(text(), "Start new session")]'),  # Fallback
                 (By.CSS_SELECTOR, 'button[type="submit"]'),
                 (By.XPATH, '//button[contains(text(), "Start")]'),
                 (By.XPATH, '//button[contains(., "new session")]')
@@ -206,7 +212,7 @@ class WestLawLogin:
                 try:
                     start_session_button = driver.find_element(by_type, selector)
                     if start_session_button and start_session_button.is_displayed():
-                        logger.info(f"Found start session button with selector: {selector}")
+                        logger.info(f"Found start session button with selector: {by_type}={selector}")
                         break
                 except:
                     continue

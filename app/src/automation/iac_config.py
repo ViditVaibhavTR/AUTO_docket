@@ -1,6 +1,6 @@
 """
 Infrastructure Access Controls (IAC) configuration module.
-Handles adding IAC values to the "IAC to be turned OFF" field.
+Clears and leaves empty the "IAC to be turned OFF" field (USER PRIORITIZED VALUE).
 """
 
 from selenium.webdriver.common.by import By
@@ -23,7 +23,7 @@ class IACConfigurator:
 
     def configure_iac(self, driver) -> bool:
         """
-        Add IAC values to the "IAC to be turned OFF" field.
+        Clear and leave empty the "IAC to be turned OFF" field (USER PRIORITIZED VALUE).
 
         Args:
             driver: Selenium WebDriver object
@@ -104,16 +104,13 @@ class IACConfigurator:
                 self.screenshot_manager.capture_on_error(driver, "iac_field_not_found")
                 raise Exception("IAC to be turned OFF field not found. Please update selectors.")
 
-            # Clear any existing content and add the IAC values
-            logger.info("Adding IAC values to 'IAC to be turned OFF' field...")
+            # PRIORITIZED: Leave IAC field empty as per user requirement
+            logger.info("Clearing IAC field to leave empty (USER PRIORITIZED VALUE)...")
 
-            # Format: comma-separated list
-            iac_text = ", ".join(settings.IAC_VALUES)
-
+            # Clear field and leave it empty
             iac_field.clear()
-            iac_field.send_keys(iac_text)
 
-            logger.info(f"IAC values added: {iac_text}")
+            logger.info("IAC field cleared and left empty - USER PRIORITIZED VALUE")
 
             # Click Save/Submit button
             logger.info("Attempting to save IAC configuration...")

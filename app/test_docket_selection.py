@@ -86,7 +86,7 @@ def main():
             logger.info("=" * 60)
             logger.info("✓✓✓ DOCKET SELECTION TEST PASSED! ✓✓✓")
             logger.info("Selected: Dockets by State -> California -> Southern District")
-            logger.info("Docket Number: 1:25-CV-01815")
+            logger.info("Docket Number: 3:26-CV-00397")
             logger.info("=" * 60)
 
             # NEW STEP: Click notification icon and Create Docket Alert
@@ -227,9 +227,373 @@ def main():
             time.sleep(3)
             screenshot_manager.capture(driver, "after_clicking_create_alert")
 
+            # NEW: Fill alert details - Name and Description
             logger.info("")
             logger.info("=" * 60)
-            logger.info("✓✓✓ CREATE DOCKET ALERT STEP COMPLETED! ✓✓✓")
+            logger.info("Step 8: Filling Alert Details...")
+            logger.info("=" * 60)
+
+            # Wait for alert form to load
+            logger.info("Waiting for alert form to load...")
+            time.sleep(2)
+            screenshot_manager.capture(driver, "alert_form_loaded")
+
+            # Find and fill "Name of alert" field
+            logger.info("Looking for 'Name of alert' field...")
+            try:
+                name_input = wait.until(
+                    EC.presence_of_element_located((By.ID, "optionsAlertName"))
+                )
+                logger.info(f"✓ Found 'Name of alert' field: id={name_input.get_attribute('id')}")
+
+                # Enter alert name
+                alert_name = "test5"
+                logger.info(f"Entering alert name: {alert_name}")
+                name_input.clear()
+                name_input.send_keys(alert_name)
+                logger.info(f"✓ Entered alert name: {alert_name}")
+                time.sleep(0.5)
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "alert_name_field_not_found")
+                raise Exception(f"Cannot find 'Name of alert' field: {e}")
+
+            # Find and fill "Description (Optional)" field
+            logger.info("Looking for 'Description (Optional)' field...")
+            try:
+                description_input = wait.until(
+                    EC.presence_of_element_located((By.ID, "optionsAlertDescription"))
+                )
+                logger.info(f"✓ Found 'Description' field: id={description_input.get_attribute('id')}")
+
+                # Enter description
+                alert_description = "NA"
+                logger.info(f"Entering description: {alert_description}")
+                description_input.clear()
+                description_input.send_keys(alert_description)
+                logger.info(f"✓ Entered description: {alert_description}")
+                time.sleep(0.5)
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "alert_description_field_not_found")
+                raise Exception(f"Cannot find 'Description' field: {e}")
+
+            screenshot_manager.capture(driver, "after_filling_alert_details")
+
+            # Find and click "Continue" button
+            logger.info("Looking for 'Continue' button...")
+            try:
+                continue_button = wait.until(
+                    EC.element_to_be_clickable((By.ID, "co_button_continue_Basics"))
+                )
+                logger.info(f"✓ Found 'Continue' button")
+                logger.info(f"  Button ID: {continue_button.get_attribute('id')}")
+                logger.info(f"  Button aria-label: {continue_button.get_attribute('aria-label')}")
+                logger.info(f"  Button text: {continue_button.text}")
+
+                screenshot_manager.capture(driver, "before_clicking_continue")
+
+                # Click Continue button
+                logger.info("Clicking 'Continue' button...")
+                try:
+                    continue_button.click()
+                    logger.info("✓ Clicked 'Continue' button (regular click)")
+                except:
+                    driver.execute_script("arguments[0].click();", continue_button)
+                    logger.info("✓ Clicked 'Continue' button (JavaScript click)")
+
+                time.sleep(3)
+                screenshot_manager.capture(driver, "after_clicking_continue")
+
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "continue_button_not_found")
+                raise Exception(f"Cannot find 'Continue' button: {e}")
+
+            logger.info("")
+            logger.info("=" * 60)
+            logger.info("✓ ALERT DETAILS FILLED & FIRST CONTINUE CLICKED! ✓")
+            logger.info(f"Alert Name: {alert_name}")
+            logger.info(f"Description: {alert_description}")
+            logger.info("=" * 60)
+
+            # Step 8.1: Click "All Content" tab
+            logger.info("")
+            logger.info("Step 8.1: Clicking 'All Content' tab...")
+            time.sleep(2)
+            screenshot_manager.capture(driver, "select_content_page_loaded")
+
+            try:
+                all_content_tab = wait.until(
+                    EC.element_to_be_clickable((By.XPATH, '//button[@role="tab"][@aria-controls="All_Content"]'))
+                )
+                logger.info(f"✓ Found 'All Content' tab")
+                logger.info(f"  Tab aria-label: {all_content_tab.get_attribute('aria-label')}")
+
+                try:
+                    all_content_tab.click()
+                    logger.info("✓ Clicked 'All Content' tab (regular click)")
+                except:
+                    driver.execute_script("arguments[0].click();", all_content_tab)
+                    logger.info("✓ Clicked 'All Content' tab (JavaScript click)")
+
+                time.sleep(1)
+                screenshot_manager.capture(driver, "after_clicking_all_content")
+
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "all_content_tab_not_found")
+                raise Exception(f"Cannot find 'All Content' tab: {e}")
+
+            # Step 8.2: Click Continue (Select Content)
+            logger.info("")
+            logger.info("Step 8.2: Clicking Continue (Select Content)...")
+            try:
+                continue_content_button = wait.until(
+                    EC.element_to_be_clickable((By.ID, "co_button_continue_Content"))
+                )
+                logger.info(f"✓ Found 'Continue' button (Select Content)")
+                logger.info(f"  Button ID: {continue_content_button.get_attribute('id')}")
+                logger.info(f"  Button aria-label: {continue_content_button.get_attribute('aria-label')}")
+
+                screenshot_manager.capture(driver, "before_clicking_continue_content")
+
+                try:
+                    continue_content_button.click()
+                    logger.info("✓ Clicked 'Continue' button (regular click)")
+                except:
+                    driver.execute_script("arguments[0].click();", continue_content_button)
+                    logger.info("✓ Clicked 'Continue' button (JavaScript click)")
+
+                time.sleep(3)
+                screenshot_manager.capture(driver, "after_clicking_continue_content")
+
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "continue_content_button_not_found")
+                raise Exception(f"Cannot find 'Continue (Select Content)' button: {e}")
+
+            # Step 8.3: Click "Alert me to all new filings" radio button
+            logger.info("")
+            logger.info("Step 8.3: Clicking 'Alert me to all new filings' radio button...")
+            time.sleep(2)
+            screenshot_manager.capture(driver, "filings_page_loaded")
+
+            try:
+                new_filings_radio = wait.until(
+                    EC.element_to_be_clickable((By.ID, "co_search_alertMeToNewFilings"))
+                )
+                logger.info(f"✓ Found 'Alert me to all new filings' radio button")
+                logger.info(f"  Radio ID: {new_filings_radio.get_attribute('id')}")
+                logger.info(f"  Radio value: {new_filings_radio.get_attribute('value')}")
+
+                try:
+                    new_filings_radio.click()
+                    logger.info("✓ Clicked 'Alert me to all new filings' radio (regular click)")
+                except:
+                    driver.execute_script("arguments[0].click();", new_filings_radio)
+                    logger.info("✓ Clicked 'Alert me to all new filings' radio (JavaScript click)")
+
+                time.sleep(1)
+                screenshot_manager.capture(driver, "after_clicking_new_filings_radio")
+
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "new_filings_radio_not_found")
+                raise Exception(f"Cannot find 'Alert me to all new filings' radio button: {e}")
+
+            # Step 8.4: Click Continue (Enter Search Terms)
+            logger.info("")
+            logger.info("Step 8.4: Clicking Continue (Enter Search Terms)...")
+            try:
+                # Find Continue button - ID: co_button_continue_Search
+                continue_after_radio = wait.until(
+                    EC.element_to_be_clickable((By.ID, "co_button_continue_Search"))
+                )
+                logger.info(f"✓ Found 'Continue' button (Enter Search Terms)")
+                logger.info(f"  Button ID: {continue_after_radio.get_attribute('id')}")
+                logger.info(f"  Button aria-label: {continue_after_radio.get_attribute('aria-label')}")
+
+                screenshot_manager.capture(driver, "before_clicking_continue_after_radio")
+
+                try:
+                    continue_after_radio.click()
+                    logger.info("✓ Clicked 'Continue' button (regular click)")
+                except:
+                    driver.execute_script("arguments[0].click();", continue_after_radio)
+                    logger.info("✓ Clicked 'Continue' button (JavaScript click)")
+
+                time.sleep(3)
+                screenshot_manager.capture(driver, "after_clicking_continue_after_radio")
+
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "continue_after_radio_not_found")
+                raise Exception(f"Cannot find 'Continue' button after radio selection: {e}")
+
+            # Step 8.5: Fill email address
+            logger.info("")
+            logger.info("Step 8.5: Filling email address...")
+            time.sleep(2)
+            screenshot_manager.capture(driver, "delivery_page_loaded")
+
+            try:
+                # First, click on the UL container to activate the email input
+                logger.info("Clicking on email container to activate input field...")
+                email_container = wait.until(
+                    EC.element_to_be_clickable((By.ID, "coid_contacts_addedContactsInput_co_collaboratorWidget"))
+                )
+                logger.info(f"✓ Found email container")
+                email_container.click()
+                logger.info("✓ Clicked email container")
+                time.sleep(1)
+
+                # Now find and fill the email input field
+                email_input = wait.until(
+                    EC.element_to_be_clickable((By.ID, "coid_contacts_autoSuggest_input"))
+                )
+                logger.info(f"✓ Found email input field")
+                logger.info(f"  Input ID: {email_input.get_attribute('id')}")
+
+                # Get email from settings (already imported at top of file)
+                user_email = settings.WESTLAW_USERNAME
+                logger.info(f"Entering email: {user_email}")
+
+                email_input.clear()
+                email_input.send_keys(user_email)
+                logger.info(f"✓ Entered email: {user_email}")
+                time.sleep(1)
+
+                # Press Enter or Tab to confirm the email
+                from selenium.webdriver.common.keys import Keys
+                email_input.send_keys(Keys.ENTER)
+                logger.info("✓ Pressed ENTER to confirm email")
+                time.sleep(2)
+
+                screenshot_manager.capture(driver, "after_filling_email")
+
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "email_field_not_found")
+                raise Exception(f"Cannot find email field: {e}")
+
+            # Step 8.6: Click Continue (Customize delivery)
+            logger.info("")
+            logger.info("Step 8.6: Clicking Continue (Customize delivery)...")
+            try:
+                continue_delivery_button = wait.until(
+                    EC.element_to_be_clickable((By.ID, "co_button_continue_Delivery"))
+                )
+                logger.info(f"✓ Found 'Continue' button (Customize delivery)")
+                logger.info(f"  Button ID: {continue_delivery_button.get_attribute('id')}")
+                logger.info(f"  Button aria-label: {continue_delivery_button.get_attribute('aria-label')}")
+
+                screenshot_manager.capture(driver, "before_clicking_continue_delivery")
+
+                try:
+                    continue_delivery_button.click()
+                    logger.info("✓ Clicked 'Continue' button (regular click)")
+                except:
+                    driver.execute_script("arguments[0].click();", continue_delivery_button)
+                    logger.info("✓ Clicked 'Continue' button (JavaScript click)")
+
+                time.sleep(3)
+                screenshot_manager.capture(driver, "after_clicking_continue_delivery")
+
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "continue_delivery_button_not_found")
+                raise Exception(f"Cannot find 'Continue (Customize delivery)' button: {e}")
+
+            # Step 8.7: Select frequency
+            logger.info("")
+            logger.info("Step 8.7: Selecting frequency...")
+            time.sleep(2)
+            screenshot_manager.capture(driver, "delivery_schedule_page_loaded")
+
+            try:
+                from selenium.webdriver.support.ui import Select
+
+                frequency_dropdown = wait.until(
+                    EC.presence_of_element_located((By.ID, "frequencySelect"))
+                )
+                logger.info(f"✓ Found frequency dropdown")
+
+                select = Select(frequency_dropdown)
+                frequency_value = "daily"  # Test with daily
+                select.select_by_value(frequency_value)
+                logger.info(f"✓ Selected frequency: {frequency_value}")
+                time.sleep(1)
+
+                screenshot_manager.capture(driver, "after_selecting_frequency")
+
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "frequency_dropdown_not_found")
+                raise Exception(f"Cannot find frequency dropdown: {e}")
+
+            # Step 8.8: Check alert times
+            logger.info("")
+            logger.info("Step 8.8: Checking alert times...")
+
+            time_checkbox_ids = {
+                '5am': 'amExecutionTime5',
+                '12pm': 'pmExecutionTime12',
+                '3pm': 'pmExecutionTime3',
+                '5pm': 'pmExecutionTime5'
+            }
+
+            # Test with 5am and 12pm
+            test_times = ['5am', '12pm']
+
+            for time_label in test_times:
+                if time_label in time_checkbox_ids:
+                    checkbox_id = time_checkbox_ids[time_label]
+                    try:
+                        checkbox = wait.until(
+                            EC.presence_of_element_located((By.ID, checkbox_id))
+                        )
+
+                        # Check if already checked
+                        is_checked = checkbox.is_selected()
+                        if not is_checked:
+                            checkbox.click()
+                            logger.info(f"✓ Checked {time_label} checkbox")
+                        else:
+                            logger.info(f"✓ {time_label} checkbox already checked")
+
+                        time.sleep(0.3)
+                    except Exception as e:
+                        logger.warning(f"Could not check {time_label} checkbox: {e}")
+
+            screenshot_manager.capture(driver, "after_checking_times")
+
+            # Step 8.9: Click "Save alert" button
+            logger.info("")
+            logger.info("Step 8.9: Clicking 'Save alert' button...")
+            time.sleep(1)
+
+            try:
+                save_alert_button = wait.until(
+                    EC.element_to_be_clickable((By.ID, "co_button_saveAlert"))
+                )
+                logger.info(f"✓ Found 'Save alert' button")
+
+                screenshot_manager.capture(driver, "before_clicking_save_alert")
+
+                try:
+                    save_alert_button.click()
+                    logger.info("✓ Clicked 'Save alert' button (regular click)")
+                except:
+                    driver.execute_script("arguments[0].click();", save_alert_button)
+                    logger.info("✓ Clicked 'Save alert' button (JavaScript click)")
+
+                time.sleep(3)
+                screenshot_manager.capture(driver, "after_clicking_save_alert")
+
+            except Exception as e:
+                screenshot_manager.capture_on_error(driver, "save_alert_button_not_found")
+                raise Exception(f"Cannot find 'Save alert' button: {e}")
+
+            logger.info("")
+            logger.info("=" * 60)
+            logger.info("✓✓✓ COMPLETE ALERT CREATION FLOW FINISHED! ✓✓✓")
+            logger.info(f"Alert Name: {alert_name}")
+            logger.info(f"Description: {alert_description}")
+            logger.info(f"Email: {user_email}")
+            logger.info(f"Frequency: {frequency_value}")
+            logger.info(f"Alert Times: {', '.join(test_times)}")
+            logger.info("All steps completed successfully!")
             logger.info("=" * 60)
 
         else:
