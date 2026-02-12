@@ -3,8 +3,14 @@ Test script for the Docket Alert Automation API.
 Demonstrates how to use the API endpoints.
 """
 
+import sys
+from pathlib import Path
+
+# Add parent directory to path to import from api module
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
 import time
-from api_client import DocketAlertAPIClient
+from api.api_client import DocketAlertAPIClient
 
 
 def main():

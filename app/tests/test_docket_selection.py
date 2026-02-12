@@ -7,8 +7,8 @@ import sys
 import time
 from pathlib import Path
 
-# Add src to path
-sys.path.insert(0, str(Path(__file__).parent))
+# Add parent directory (app/) to path to import from src
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from src.config.settings import settings
 from src.automation.browser import BrowserManager

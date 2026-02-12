@@ -194,6 +194,26 @@ class WestLawLogin:
                 logger.info("Email re-entered")
                 time.sleep(1)
 
+            # FIX: Dismiss autocomplete dropdown to prevent click interception
+            logger.info("Dismissing autocomplete dropdown...")
+            try:
+                # Press Escape key to close any autocomplete dropdowns
+                client_id_field.send_keys(Keys.ESCAPE)
+                time.sleep(0.2)  # Brief wait for dropdown to close
+
+                # Click elsewhere to ensure focus is removed
+                driver.execute_script("""
+                    if (document.activeElement) {
+                        document.activeElement.blur();
+                    }
+                """)
+                time.sleep(0.1)
+
+                logger.info("Autocomplete dropdown dismissed")
+            except Exception as e:
+                logger.warning(f"Could not dismiss autocomplete: {e}")
+                # Continue anyway - JavaScript click will work as fallback
+
             # PRIORITIZED: Use user-provided start session button selectors first
             logger.info("Looking for 'Start new session' button...")
             start_session_button = None
