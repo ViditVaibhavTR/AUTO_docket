@@ -386,6 +386,14 @@ class DocketSelector:
 
                         # Clear and enter the docket number
                         logger.info(f"Entering docket number: {docket_number}")
+
+                        # CRITICAL: Remove maxlength attribute that restricts input to 9 chars
+                        try:
+                            driver.execute_script("arguments[0].removeAttribute('maxlength');", input_element)
+                            logger.info("✓ Removed maxlength restriction")
+                        except Exception as e:
+                            logger.warning(f"Could not remove maxlength: {e}")
+
                         input_element.clear()
                         time.sleep(0.3)  # Wait after clear before typing
 

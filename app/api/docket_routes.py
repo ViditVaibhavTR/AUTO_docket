@@ -4,6 +4,7 @@ Docket and district selection endpoints.
 
 import sys
 import asyncio
+import time
 from pathlib import Path
 
 from fastapi import HTTPException, status
@@ -11,10 +12,16 @@ from fastapi import HTTPException, status
 # Add src to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.common.exceptions import TimeoutException
+
 from src.automation.docket_selection import DocketSelector
 from src.utils.logger import get_logger
 from src.utils.smart_waits import SmartWaits
 from src.utils.popup_blocker import PopupBlocker
+from src.utils.screenshot import ScreenshotManager
 from api.app import app, browser_sessions, session_locks
 from models.schemas import (
     DocketSelectionRequest,
@@ -282,8 +289,36 @@ async def search_docket(request: DocketSearchRequest):
 
             # PHASE 1 OPTIMIZATION: Overlays already removed at start
             search_button.click()
-            # OPTIMIZED: Wait for search results using smart wait (reduced from 3s to 2s)
-            SmartWaits.wait_for_page_ready(driver, timeout=2)
+            logger.info("Waiting for search results page to load completely...")
+
+            # Step 1: Wait for document to be ready (increased from 2s to 10s)
+            SmartWaits.wait_for_page_ready(driver, timeout=10)
+            logger.info("✓ Document ready")
+
+            # Step 2: Wait for AJAX requests to complete
+            SmartWaits.wait_for_ajax_complete(driver, timeout=5)
+            logger.info("✓ AJAX requests complete")
+
+            # Step 3: Scroll to top to ensure header is visible
+            driver.execute_script("window.scrollTo({top: 0, behavior: 'instant'});")
+            logger.info("✓ Scrolled to top")
+            time.sleep(0.5)  # Brief wait for scroll to complete
+
+            # Step 4: Verify header is visible
+            try:
+                header_wait = WebDriverWait(driver, 5)
+                # Wait for header element to be visible in viewport
+                header_element = header_wait.until(
+                    EC.visibility_of_element_located((By.TAG_NAME, "header"))
+                )
+                logger.info("✓ Page header visible successfully")
+            except TimeoutException:
+                logger.warning("Header element not visible within 5s, but continuing...")
+                # Take screenshot for debugging
+                screenshot_manager = ScreenshotManager()
+                screenshot_manager.capture_on_error(driver, "missing_header_after_search")
+            except Exception as e:
+                logger.warning(f"Error checking for header: {e}")
 
             session["state"] = "docket_searched"
             return True

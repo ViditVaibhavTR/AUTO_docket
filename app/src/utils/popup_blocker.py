@@ -189,7 +189,8 @@ class PopupBlocker:
             logger.debug(f"Modal close error: {e}")
             return False
 
-    def remove_blocking_overlays(self):
+    @staticmethod
+    def remove_blocking_overlays(driver):
         """Remove any blocking overlays using JavaScript"""
         try:
             script = """
@@ -202,13 +203,24 @@ class PopupBlocker:
                     var style = window.getComputedStyle(el);
                     var zIndex = parseInt(style.zIndex);
 
-                    // Remove if it's a high z-index overlay
-                    if (zIndex > 1000 &&
+                    // Remove if it's a high z-index overlay (lowered threshold to 100)
+                    if (zIndex > 100 &&
                         (style.position === 'fixed' || style.position === 'absolute') &&
                         (style.display !== 'none')) {
 
-                        // Don't remove if it's part of the main navigation
-                        if (!el.closest('header') && !el.closest('nav')) {
+                        // Check if element is a WestLaw header/navigation element
+                        var isWestLawHeader =
+                            el.classList.contains('co_topNav') ||
+                            el.classList.contains('co_header') ||
+                            el.classList.contains('co_siteHeader') ||
+                            el.classList.contains('co_globalNav') ||
+                            (el.id && (el.id.includes('co_header') || el.id.includes('topNav'))) ||
+                            el.closest('.co_topNav') ||
+                            el.closest('.co_header') ||
+                            el.closest('.co_siteHeader');
+
+                        // Don't remove main navigation OR WestLaw header elements
+                        if (!el.closest('header') && !el.closest('nav') && !isWestLawHeader) {
                             console.log('Removing overlay with z-index: ' + zIndex);
                             el.remove();
                             removed++;
@@ -220,7 +232,7 @@ class PopupBlocker:
             return removed;
             """
 
-            removed = self.driver.execute_script(script)
+            removed = driver.execute_script(script)
             if removed > 0:
                 logger.info(f"✓ Removed {removed} blocking overlay(s)")
                 return True
@@ -246,7 +258,7 @@ class PopupBlocker:
             blocked = True
 
         # 3. Remove overlays
-        if self.remove_blocking_overlays():
+        if self.remove_blocking_overlays(self.driver):
             blocked = True
 
         # 4. Re-inject prevention scripts (in case page reloaded)

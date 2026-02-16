@@ -74,13 +74,34 @@ async def create_alert(request: CreateAlertRequest):
                             var style = window.getComputedStyle(el);
                             var zIndex = parseInt(style.zIndex);
 
-                            // Lower threshold to 500 (instead of 1000)
-                            if (zIndex > 500 &&
+                            // Lower threshold to 100 to catch dropdowns (was 500, then 1000)
+                            if (zIndex > 100 &&
                                 (style.position === 'fixed' || style.position === 'absolute') &&
                                 style.display !== 'none') {
 
-                                // Don't remove main navigation
-                                if (!el.closest('header') && !el.closest('nav')) {
+                                // Check if element is a WestLaw header/navigation element
+                                var isWestLawHeader =
+                                    el.classList.contains('co_topNav') ||
+                                    el.classList.contains('co_header') ||
+                                    el.classList.contains('co_siteHeader') ||
+                                    el.classList.contains('co_globalNav') ||
+                                    (el.id && (el.id.includes('co_header') || el.id.includes('topNav'))) ||
+                                    el.closest('.co_topNav') ||
+                                    el.closest('.co_header') ||
+                                    el.closest('.co_siteHeader');
+
+                                // Check if element is a form or contains form elements
+                                var isFormElement =
+                                    el.tagName === 'FORM' ||
+                                    el.tagName === 'INPUT' ||
+                                    el.tagName === 'TEXTAREA' ||
+                                    el.tagName === 'SELECT' ||
+                                    el.tagName === 'BUTTON' ||
+                                    el.closest('form') ||
+                                    el.querySelector('input, textarea, select');
+
+                                // Don't remove navigation, headers, or form elements
+                                if (!el.closest('header') && !el.closest('nav') && !isWestLawHeader && !isFormElement) {
                                     console.log('Removing overlay with z-index: ' + zIndex);
                                     el.remove();
                                     removed++;
@@ -211,52 +232,6 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
             # OPTIMIZED: Wait for page to be ready (reduced from 3s to 2s)
             SmartWaits.wait_for_page_ready(driver, timeout=2)
 
-            # Enhanced overlay removal
-            logger.info("Removing blocking overlays and dropdowns...")
-            try:
-                # Remove high z-index overlays
-                removed_overlays = driver.execute_script("""
-                    var removed = 0;
-
-                    // Remove high z-index overlays (including modals, dropdowns)
-                    document.querySelectorAll('*').forEach(function(el) {
-                        try {
-                            var style = window.getComputedStyle(el);
-                            var zIndex = parseInt(style.zIndex);
-
-                            // Lower threshold to 500 (instead of 1000)
-                            if (zIndex > 500 &&
-                                (style.position === 'fixed' || style.position === 'absolute') &&
-                                style.display !== 'none') {
-
-                                // Don't remove main navigation
-                                if (!el.closest('header') && !el.closest('nav')) {
-                                    console.log('Removing overlay with z-index: ' + zIndex);
-                                    el.remove();
-                                    removed++;
-                                }
-                            }
-                        } catch(e) {}
-                    });
-
-                    // Remove specific dropdown classes that block clicks
-                    document.querySelectorAll('.co_formTextSelect, .dropdown-menu, .autocomplete').forEach(function(el) {
-                        if (window.getComputedStyle(el).display !== 'none') {
-                            console.log('Removing blocking dropdown:', el.className);
-                            el.remove();
-                            removed++;
-                        }
-                    });
-
-                    return removed;
-                """)
-
-                if removed_overlays > 0:
-                    logger.info(f"✓ Removed {removed_overlays} blocking element(s)")
-                    time.sleep(0.2)  # Brief wait after removal
-            except Exception as e:
-                logger.warning(f"Overlay removal failed: {e}")
-
             # Fill alert name
             logger.info("Filling alert name...")
             name_input = wait.until(
@@ -298,8 +273,13 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
                 EC.element_to_be_clickable((By.ID, "co_button_continue_Basics"))
             )
             # PHASE 1 OPTIMIZATION: Overlays already removed at start
-            continue_button.click()
-            logger.info("✓ Clicked Continue (Basics)")
+            try:
+                continue_button.click()
+                logger.info("✓ Clicked Continue (Basics)")
+            except Exception as e:
+                logger.warning(f"Regular click failed: {e}. Trying JavaScript click...")
+                driver.execute_script("arguments[0].click();", continue_button)
+                logger.info("✓ Clicked Continue (Basics) using JavaScript")
             # OPTIMIZED: Removed redundant SmartWaits - next element wait is sufficient
 
             # Click "All Content" tab
@@ -315,7 +295,13 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
                 EC.element_to_be_clickable((By.ID, "co_button_continue_Content"))
             )
             # PHASE 1 OPTIMIZATION: Overlays already removed at start
-            continue_content_button.click()
+            try:
+                continue_content_button.click()
+                logger.info("✓ Clicked Continue (Content)")
+            except Exception as e:
+                logger.warning(f"Regular click failed: {e}. Trying JavaScript click...")
+                driver.execute_script("arguments[0].click();", continue_content_button)
+                logger.info("✓ Clicked Continue (Content) using JavaScript")
             # OPTIMIZED: Removed redundant SmartWaits - next element wait is sufficient
 
             # Click "Alert me to all new filings" radio
@@ -343,7 +329,13 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
                 EC.element_to_be_clickable((By.ID, "co_button_continue_Search"))
             )
             # PHASE 1 OPTIMIZATION: Overlays already removed at start
-            continue_search_button.click()
+            try:
+                continue_search_button.click()
+                logger.info("✓ Clicked Continue (Search Terms)")
+            except Exception as e:
+                logger.warning(f"Regular click failed: {e}. Trying JavaScript click...")
+                driver.execute_script("arguments[0].click();", continue_search_button)
+                logger.info("✓ Clicked Continue (Search Terms) using JavaScript")
             # OPTIMIZED: Removed redundant SmartWaits - next element wait is sufficient
 
             # Fill email
@@ -370,7 +362,13 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
                 EC.element_to_be_clickable((By.ID, "co_button_continue_Delivery"))
             )
             # PHASE 1 OPTIMIZATION: Overlays already removed at start
-            continue_delivery_button.click()
+            try:
+                continue_delivery_button.click()
+                logger.info("✓ Clicked Continue (Delivery)")
+            except Exception as e:
+                logger.warning(f"Regular click failed: {e}. Trying JavaScript click...")
+                driver.execute_script("arguments[0].click();", continue_delivery_button)
+                logger.info("✓ Clicked Continue (Delivery) using JavaScript")
             # OPTIMIZED: Removed redundant SmartWaits - next element wait is sufficient
 
             # Select frequency
@@ -418,7 +416,13 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
                 EC.element_to_be_clickable((By.ID, "co_button_saveAlert"))
             )
             # PHASE 1 OPTIMIZATION: Overlays already removed at start
-            save_alert_button.click()
+            try:
+                save_alert_button.click()
+                logger.info("✓ Clicked Save Alert button")
+            except Exception as e:
+                logger.warning(f"Regular click failed: {e}. Trying JavaScript click...")
+                driver.execute_script("arguments[0].click();", save_alert_button)
+                logger.info("✓ Clicked Save Alert button using JavaScript")
             # OPTIMIZED: Wait for save confirmation (reduced from 3s to 2s)
             SmartWaits.wait_for_page_ready(driver, timeout=2)
 
