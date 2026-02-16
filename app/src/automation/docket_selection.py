@@ -52,17 +52,14 @@ class DocketSelector:
             from selenium.webdriver.support.ui import WebDriverWait
             from selenium.webdriver.support import expected_conditions as EC
 
-            # Wait for page to stabilize after login
-            logger.info("Waiting for page to load...")
-            time.sleep(3)
+            # Wait for page to load
+            logger.info("Waiting for page to load completely...")
+            time.sleep(6)  # Give extra time for page to stabilize
 
             logger.info(f"Current URL: {driver.current_url}")
-
-            # Take screenshot of the page before searching
             self.screenshot_manager.capture(driver, "before_content_types_search")
-            logger.info("Screenshot saved: before_content_types_search")
 
-            # First, click on "Content types" tab in the navigation
+            # Click on "Content types" tab in the navigation
             logger.info("Looking for 'Content types' tab in navigation...")
 
             # Try to find Content types tab in navigation

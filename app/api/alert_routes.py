@@ -61,9 +61,51 @@ async def create_alert(request: CreateAlertRequest):
             # OPTIMIZED: Use smart wait instead of fixed sleep (reduced from 3s to 2s)
             SmartWaits.wait_for_page_ready(driver, timeout=2)
 
-            # PHASE 1 OPTIMIZATION: Remove overlays once at start instead of before each click
-            logger.info("Removing blocking overlays proactively...")
-            PopupBlocker.remove_blocking_overlays(driver)
+            # Enhanced overlay removal
+            logger.info("Removing blocking overlays and dropdowns...")
+            try:
+                # Remove high z-index overlays
+                removed_overlays = driver.execute_script("""
+                    var removed = 0;
+
+                    // Remove high z-index overlays (including modals, dropdowns)
+                    document.querySelectorAll('*').forEach(function(el) {
+                        try {
+                            var style = window.getComputedStyle(el);
+                            var zIndex = parseInt(style.zIndex);
+
+                            // Lower threshold to 500 (instead of 1000)
+                            if (zIndex > 500 &&
+                                (style.position === 'fixed' || style.position === 'absolute') &&
+                                style.display !== 'none') {
+
+                                // Don't remove main navigation
+                                if (!el.closest('header') && !el.closest('nav')) {
+                                    console.log('Removing overlay with z-index: ' + zIndex);
+                                    el.remove();
+                                    removed++;
+                                }
+                            }
+                        } catch(e) {}
+                    });
+
+                    // Remove specific dropdown classes that block clicks
+                    document.querySelectorAll('.co_formTextSelect, .dropdown-menu, .autocomplete').forEach(function(el) {
+                        if (window.getComputedStyle(el).display !== 'none') {
+                            console.log('Removing blocking dropdown:', el.className);
+                            el.remove();
+                            removed++;
+                        }
+                    });
+
+                    return removed;
+                """)
+
+                if removed_overlays > 0:
+                    logger.info(f"✓ Removed {removed_overlays} blocking element(s)")
+                    time.sleep(0.2)  # Brief wait after removal
+            except Exception as e:
+                logger.warning(f"Overlay removal failed: {e}")
 
             # Find and click "Create Alert menu" button
             notification_selectors = [
@@ -169,35 +211,95 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
             # OPTIMIZED: Wait for page to be ready (reduced from 3s to 2s)
             SmartWaits.wait_for_page_ready(driver, timeout=2)
 
-            # PHASE 1 OPTIMIZATION: Remove overlays once at start instead of before each click
-            logger.info("Removing blocking overlays proactively...")
-            PopupBlocker.remove_blocking_overlays(driver)
+            # Enhanced overlay removal
+            logger.info("Removing blocking overlays and dropdowns...")
+            try:
+                # Remove high z-index overlays
+                removed_overlays = driver.execute_script("""
+                    var removed = 0;
+
+                    // Remove high z-index overlays (including modals, dropdowns)
+                    document.querySelectorAll('*').forEach(function(el) {
+                        try {
+                            var style = window.getComputedStyle(el);
+                            var zIndex = parseInt(style.zIndex);
+
+                            // Lower threshold to 500 (instead of 1000)
+                            if (zIndex > 500 &&
+                                (style.position === 'fixed' || style.position === 'absolute') &&
+                                style.display !== 'none') {
+
+                                // Don't remove main navigation
+                                if (!el.closest('header') && !el.closest('nav')) {
+                                    console.log('Removing overlay with z-index: ' + zIndex);
+                                    el.remove();
+                                    removed++;
+                                }
+                            }
+                        } catch(e) {}
+                    });
+
+                    // Remove specific dropdown classes that block clicks
+                    document.querySelectorAll('.co_formTextSelect, .dropdown-menu, .autocomplete').forEach(function(el) {
+                        if (window.getComputedStyle(el).display !== 'none') {
+                            console.log('Removing blocking dropdown:', el.className);
+                            el.remove();
+                            removed++;
+                        }
+                    });
+
+                    return removed;
+                """)
+
+                if removed_overlays > 0:
+                    logger.info(f"✓ Removed {removed_overlays} blocking element(s)")
+                    time.sleep(0.2)  # Brief wait after removal
+            except Exception as e:
+                logger.warning(f"Overlay removal failed: {e}")
 
             # Fill alert name
+            logger.info("Filling alert name...")
             name_input = wait.until(
-                EC.presence_of_element_located((By.ID, "optionsAlertName"))
+                EC.element_to_be_clickable((By.ID, "optionsAlertName"))
             )
+            # Click to focus the field first
+            name_input.click()
+            time.sleep(0.05)
+            # Clear any existing content
             name_input.clear()
+            time.sleep(0.05)
+            # Enter the alert name
             name_input.send_keys(request.alert_name)
-            # OPTIMIZED: Reduced from 0.2s to 0.1s
+            logger.info(f"Alert name entered: {request.alert_name}")
+            # OPTIMIZED: Brief wait for field to register input
             time.sleep(0.1)
 
             # Fill description if provided
             if request.alert_description:
+                logger.info("Filling alert description...")
                 description_input = wait.until(
-                    EC.presence_of_element_located((By.ID, "optionsAlertDescription"))
+                    EC.element_to_be_clickable((By.ID, "optionsAlertDescription"))
                 )
+                # Click to focus the field first
+                description_input.click()
+                time.sleep(0.05)
+                # Clear any existing content
                 description_input.clear()
+                time.sleep(0.05)
+                # Enter the description
                 description_input.send_keys(request.alert_description)
-                # OPTIMIZED: Reduced from 0.2s to 0.1s
+                logger.info("Description entered")
+                # OPTIMIZED: Brief wait for field to register input
                 time.sleep(0.1)
 
             # Click Continue (Basics)
+            logger.info("Clicking Continue (Basics) button...")
             continue_button = wait.until(
                 EC.element_to_be_clickable((By.ID, "co_button_continue_Basics"))
             )
             # PHASE 1 OPTIMIZATION: Overlays already removed at start
             continue_button.click()
+            logger.info("✓ Clicked Continue (Basics)")
             # OPTIMIZED: Removed redundant SmartWaits - next element wait is sufficient
 
             # Click "All Content" tab
@@ -220,8 +322,20 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
             new_filings_radio = wait.until(
                 EC.element_to_be_clickable((By.ID, "co_search_alertMeToNewFilings"))
             )
-            new_filings_radio.click()
-            # OPTIMIZED: Reduced from 0.3s to 0.15s
+            logger.info("✓ Found 'Alert me to all new filings' radio button")
+
+            # Scroll into view first
+            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", new_filings_radio)
+            time.sleep(0.3)
+
+            try:
+                new_filings_radio.click()
+                logger.info("✓ Clicked radio button using regular click")
+            except Exception as e:
+                logger.warning(f"Regular click failed: {e}. Trying JavaScript click...")
+                driver.execute_script("arguments[0].click();", new_filings_radio)
+                logger.info("✓ Clicked radio button using JavaScript click")
+
             time.sleep(0.15)
 
             # Click Continue (Enter Search Terms)
@@ -284,8 +398,17 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
                             EC.presence_of_element_located((By.ID, checkbox_id))
                         )
                         if not checkbox.is_selected():
-                            checkbox.click()
-                        # OPTIMIZED: Reduced from 0.1s to 0.05s
+                            # Scroll into view
+                            driver.execute_script("arguments[0].scrollIntoView({block: 'center'});", checkbox)
+                            time.sleep(0.2)
+
+                            try:
+                                checkbox.click()
+                                logger.info(f"✓ Checked {time_label} checkbox using regular click")
+                            except:
+                                driver.execute_script("arguments[0].click();", checkbox)
+                                logger.info(f"✓ Checked {time_label} checkbox using JavaScript click")
+
                         time.sleep(0.05)
                     except Exception as e:
                         logger.warning(f"Could not check {time_label} checkbox: {e}")

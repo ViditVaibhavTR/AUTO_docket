@@ -160,99 +160,174 @@ class WestLawLogin:
             logger.info("Entering client ID (email)...")
             from selenium.webdriver.common.keys import Keys
 
-            # Clear any existing content
+            # Check if field already has a valid value
             current_value = client_id_field.get_attribute('value')
-            if current_value:
-                logger.info(f"Field contains '{current_value}', clearing...")
-                client_id_field.send_keys(Keys.CONTROL + "a")
-                time.sleep(0.1)
-                client_id_field.send_keys(Keys.BACKSPACE)
-                time.sleep(0.3)
+            if current_value and current_value.strip():
+                logger.info(f"✓ Client ID field already has value: '{current_value}'")
+                logger.info("Skipping re-entry - will use prefilled value")
 
-            # Enter email
-            logger.info("Entering email...")
-            client_id_field.send_keys(settings.WESTLAW_USERNAME)
-            logger.info(f"Email entered: {settings.WESTLAW_USERNAME}")
+                # Dismiss any autocomplete dropdown
+                logger.info("Dismissing autocomplete dropdown...")
+                try:
+                    client_id_field.send_keys(Keys.ESCAPE)
+                    time.sleep(0.2)
+                    driver.execute_script("""
+                        if (document.activeElement) {
+                            document.activeElement.blur();
+                        }
+                    """)
+                    time.sleep(0.1)
+                    logger.info("✓ Autocomplete dropdown dismissed")
+                except Exception as e:
+                    logger.warning(f"Could not dismiss autocomplete: {e}")
 
-            # Wait and DON'T press escape - it might be clearing the field
-            time.sleep(1.5)
+                # Skip to button click - no need to clear or re-enter
 
-            # Final check - if field is empty, enter it one more time
-            final_value = client_id_field.get_attribute('value')
-            if not final_value or final_value != settings.WESTLAW_USERNAME:
-                logger.warning(f"Field is '{final_value}' - re-entering email...")
-                # Click to focus
-                client_id_field.click()
-                time.sleep(0.2)
-                # Clear
-                client_id_field.send_keys(Keys.CONTROL + "a")
-                time.sleep(0.1)
-                client_id_field.send_keys(Keys.BACKSPACE)
-                time.sleep(0.2)
-                # Re-enter
+            else:
+                # Field is empty - enter the email
+                logger.info("Client ID field is empty, entering email...")
+
+                # Enter email
                 client_id_field.send_keys(settings.WESTLAW_USERNAME)
-                logger.info("Email re-entered")
-                time.sleep(1)
+                logger.info(f"Email entered: {settings.WESTLAW_USERNAME}")
+                time.sleep(1.5)
 
-            # FIX: Dismiss autocomplete dropdown to prevent click interception
-            logger.info("Dismissing autocomplete dropdown...")
-            try:
-                # Press Escape key to close any autocomplete dropdowns
-                client_id_field.send_keys(Keys.ESCAPE)
-                time.sleep(0.2)  # Brief wait for dropdown to close
+                # Verify entry
+                final_value = client_id_field.get_attribute('value')
+                if not final_value or final_value != settings.WESTLAW_USERNAME:
+                    logger.warning(f"Email verification failed. Expected: {settings.WESTLAW_USERNAME}, Got: {final_value}")
+                    logger.info("Attempting re-entry...")
 
-                # Click elsewhere to ensure focus is removed
-                driver.execute_script("""
-                    if (document.activeElement) {
-                        document.activeElement.blur();
-                    }
-                """)
-                time.sleep(0.1)
+                    # Try one more time
+                    client_id_field.clear()
+                    time.sleep(0.2)
+                    client_id_field.send_keys(settings.WESTLAW_USERNAME)
+                    time.sleep(0.5)
 
-                logger.info("Autocomplete dropdown dismissed")
-            except Exception as e:
-                logger.warning(f"Could not dismiss autocomplete: {e}")
-                # Continue anyway - JavaScript click will work as fallback
+                    # Final check
+                    final_value = client_id_field.get_attribute('value')
+                    if final_value == settings.WESTLAW_USERNAME:
+                        logger.info("✓ Email re-entry successful")
+                    else:
+                        logger.error(f"Email entry failed after retry. Got: {final_value}")
+                else:
+                    logger.info("✓ Email verified successfully")
 
-            # PRIORITIZED: Use user-provided start session button selectors first
+                # Dismiss autocomplete dropdown
+                logger.info("Dismissing autocomplete dropdown...")
+                try:
+                    client_id_field.send_keys(Keys.ESCAPE)
+                    time.sleep(0.2)
+                    driver.execute_script("""
+                        if (document.activeElement) {
+                            document.activeElement.blur();
+                        }
+                    """)
+                    time.sleep(0.1)
+                    logger.info("✓ Autocomplete dropdown dismissed")
+                except Exception as e:
+                    logger.warning(f"Could not dismiss autocomplete: {e}")
+
+            # Continue to button click
             logger.info("Looking for 'Start new session' button...")
+
+            # Wait a moment for page to stabilize after client ID entry
+            time.sleep(1)
+
             start_session_button = None
             start_session_selectors = [
-                (By.ID, "co_clientIDContinueButton"),  # USER PRIORITIZED - Exact ID from HTML
-                (By.CSS_SELECTOR, 'input.co_primaryBtn'),  # USER PRIORITIZED - Exact class from HTML
-                (By.XPATH, '//input[@type="button"][@id="co_clientIDContinueButton"]'),  # USER PRIORITIZED - Combined selector
-                (By.XPATH, '//input[@value="Start new session"]'),  # USER PRIORITIZED - Exact value from HTML
-                (By.XPATH, '//button[contains(text(), "Start new session")]'),  # Fallback
-                (By.CSS_SELECTOR, 'button[type="submit"]'),
-                (By.XPATH, '//button[contains(text(), "Start")]'),
-                (By.XPATH, '//button[contains(., "new session")]')
+                (By.ID, "co_clientIDContinueButton"),  # PRIMARY
+                (By.XPATH, '//input[@value="Start new session"]'),
+                (By.XPATH, '//button[contains(text(), "Start new session")]'),
+                (By.CSS_SELECTOR, 'input.co_primaryBtn'),
+                (By.XPATH, '//input[@type="button"][@id="co_clientIDContinueButton"]'),
+                (By.XPATH, '//input[@type="submit"]'),
+                (By.XPATH, '//button[@type="submit"]'),
+                (By.CSS_SELECTOR, 'button.co_primaryBtn'),
+                (By.XPATH, '//input[contains(@value, "Start")]'),
+                (By.XPATH, '//button[contains(text(), "Start")]')
             ]
 
+            # Try to find button with each selector
             for by_type, selector in start_session_selectors:
                 try:
-                    start_session_button = driver.find_element(by_type, selector)
-                    if start_session_button and start_session_button.is_displayed():
-                        logger.info(f"Found start session button with selector: {by_type}={selector}")
-                        break
-                except:
+                    logger.info(f"Trying selector: {by_type}={selector}")
+
+                    # Find the element (without requiring it to be displayed yet)
+                    element = driver.find_element(by_type, selector)
+
+                    if element:
+                        logger.info(f"✓ Found element with {by_type}={selector}")
+
+                        # Scroll element into view to make it visible
+                        driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", element)
+                        time.sleep(0.5)  # Wait for scroll
+
+                        # Check if now displayed
+                        if element.is_displayed():
+                            logger.info(f"✓ Element is displayed after scroll")
+                            start_session_button = element
+                            break
+                        else:
+                            logger.warning(f"Element found but still not displayed: {by_type}={selector}")
+                            # Try next selector
+                            continue
+                except Exception as e:
+                    logger.debug(f"Selector {by_type}={selector} failed: {e}")
                     continue
 
+            # If still not found, try without visibility check (use JavaScript)
             if not start_session_button:
-                logger.error("Start session button not found")
-                self.screenshot_manager.capture_on_error(driver, "start_session_button_not_found")
-                raise Exception("Start session button not found")
+                logger.warning("Button not found with visibility check - trying without display requirement...")
 
-            # Click start session button - try regular click first, then JavaScript
+                for by_type, selector in start_session_selectors:
+                    try:
+                        element = driver.find_element(by_type, selector)
+                        if element:
+                            logger.info(f"Found element (no visibility check): {by_type}={selector}")
+                            start_session_button = element
+                            break
+                    except:
+                        continue
+
+            # Final check
+            if not start_session_button:
+                logger.error("FAILED: Start session button not found with any selector")
+                self.screenshot_manager.capture_on_error(driver, "start_session_button_not_found")
+
+                # Save page source for debugging
+                try:
+                    with open("debug_login_page.html", "w", encoding="utf-8") as f:
+                        f.write(driver.page_source)
+                    logger.info("Saved page source to debug_login_page.html")
+                except:
+                    pass
+
+                raise Exception("Start session button not found on page")
+
+            # Click the button
             logger.info("Clicking 'Start new session' button...")
+            self.screenshot_manager.capture(driver, "before_clicking_start_session")
+
             try:
+                # Try regular click first
                 start_session_button.click()
+                logger.info("✓ Clicked button using regular click")
             except Exception as e:
                 logger.warning(f"Regular click failed: {e}. Trying JavaScript click...")
-                driver.execute_script("arguments[0].click();", start_session_button)
+                try:
+                    driver.execute_script("arguments[0].click();", start_session_button)
+                    logger.info("✓ Clicked button using JavaScript click")
+                except Exception as js_error:
+                    logger.error(f"JavaScript click also failed: {js_error}")
+                    self.screenshot_manager.capture_on_error(driver, "button_click_failed")
+                    raise Exception(f"Failed to click Start new session button: {js_error}")
 
-            # Wait for page to fully load after starting session
+            logger.info("✓ Clicked Start new session button")
+
+            # Wait for navigation to WestLaw Precision home page
             logger.info("Waiting for WestLaw Precision home page to load...")
-            time.sleep(5)  # Give page time to load completely before docket selection
+            time.sleep(5)
 
             logger.info("WestLaw Precision login and session start completed successfully")
             return True
