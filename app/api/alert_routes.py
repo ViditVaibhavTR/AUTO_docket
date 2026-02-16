@@ -206,117 +206,48 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
             from selenium.webdriver.support import expected_conditions as EC
             import time
 
-            # OPTIMIZED: Reduced timeout from 3s to 2s
-            wait = WebDriverWait(driver, 2)
-            # OPTIMIZED: Wait for page to be ready (reduced from 3s to 2s)
-            SmartWaits.wait_for_page_ready(driver, timeout=2)
+            # Restored from dcab744 - 10 second timeout for reliability
+            wait = WebDriverWait(driver, 10)
+            # Restored from dcab744 - fixed 2s sleep to let page settle
+            time.sleep(2)
 
-            # Enhanced overlay removal
-            logger.info("Removing blocking overlays and dropdowns...")
-            try:
-                # Remove high z-index overlays
-                removed_overlays = driver.execute_script("""
-                    var removed = 0;
-
-                    // Remove high z-index overlays (including modals, dropdowns)
-                    document.querySelectorAll('*').forEach(function(el) {
-                        try {
-                            var style = window.getComputedStyle(el);
-                            var zIndex = parseInt(style.zIndex);
-
-                            // Lower threshold to 500 (instead of 1000)
-                            if (zIndex > 500 &&
-                                (style.position === 'fixed' || style.position === 'absolute') &&
-                                style.display !== 'none') {
-
-                                // Don't remove main navigation
-                                if (!el.closest('header') && !el.closest('nav')) {
-                                    console.log('Removing overlay with z-index: ' + zIndex);
-                                    el.remove();
-                                    removed++;
-                                }
-                            }
-                        } catch(e) {}
-                    });
-
-                    // Remove specific dropdown classes that block clicks
-                    document.querySelectorAll('.co_formTextSelect, .dropdown-menu, .autocomplete').forEach(function(el) {
-                        if (window.getComputedStyle(el).display !== 'none') {
-                            console.log('Removing blocking dropdown:', el.className);
-                            el.remove();
-                            removed++;
-                        }
-                    });
-
-                    return removed;
-                """)
-
-                if removed_overlays > 0:
-                    logger.info(f"✓ Removed {removed_overlays} blocking element(s)")
-                    time.sleep(0.2)  # Brief wait after removal
-            except Exception as e:
-                logger.warning(f"Overlay removal failed: {e}")
-
-            # Fill alert name
-            logger.info("Filling alert name...")
+            # Fill alert name - restored from dcab744 (NO overlay removal)
             name_input = wait.until(
-                EC.element_to_be_clickable((By.ID, "optionsAlertName"))
+                EC.presence_of_element_located((By.ID, "optionsAlertName"))
             )
-            # Click to focus the field first
-            name_input.click()
-            time.sleep(0.05)
-            # Clear any existing content
             name_input.clear()
-            time.sleep(0.05)
-            # Enter the alert name
             name_input.send_keys(request.alert_name)
-            logger.info(f"Alert name entered: {request.alert_name}")
-            # OPTIMIZED: Brief wait for field to register input
-            time.sleep(0.1)
+            time.sleep(0.5)  # Restored from dcab744
 
-            # Fill description if provided
+            # Fill description if provided - restored from dcab744
             if request.alert_description:
-                logger.info("Filling alert description...")
                 description_input = wait.until(
-                    EC.element_to_be_clickable((By.ID, "optionsAlertDescription"))
+                    EC.presence_of_element_located((By.ID, "optionsAlertDescription"))
                 )
-                # Click to focus the field first
-                description_input.click()
-                time.sleep(0.05)
-                # Clear any existing content
                 description_input.clear()
-                time.sleep(0.05)
-                # Enter the description
                 description_input.send_keys(request.alert_description)
-                logger.info("Description entered")
-                # OPTIMIZED: Brief wait for field to register input
-                time.sleep(0.1)
+                time.sleep(0.5)  # Restored from dcab744
 
-            # Click Continue (Basics)
-            logger.info("Clicking Continue (Basics) button...")
+            # Click Continue (Basics) - restored from dcab744
             continue_button = wait.until(
                 EC.element_to_be_clickable((By.ID, "co_button_continue_Basics"))
             )
-            # PHASE 1 OPTIMIZATION: Overlays already removed at start
             continue_button.click()
-            logger.info("✓ Clicked Continue (Basics)")
-            # OPTIMIZED: Removed redundant SmartWaits - next element wait is sufficient
+            time.sleep(3)  # CRITICAL: Restored from dcab744 - page needs time to render
 
-            # Click "All Content" tab
+            # Click "All Content" tab - restored from dcab744
             all_content_tab = wait.until(
                 EC.element_to_be_clickable((By.XPATH, '//button[@role="tab"][@aria-controls="All_Content"]'))
             )
             all_content_tab.click()
-            # OPTIMIZED: Wait for tab content to load
-            SmartWaits.wait_for_ajax_complete(driver, timeout=1)
+            time.sleep(1)  # Restored from dcab744
 
-            # Click Continue (Select Content)
+            # Click Continue (Select Content) - restored from dcab744
             continue_content_button = wait.until(
                 EC.element_to_be_clickable((By.ID, "co_button_continue_Content"))
             )
-            # PHASE 1 OPTIMIZATION: Overlays already removed at start
             continue_content_button.click()
-            # OPTIMIZED: Removed redundant SmartWaits - next element wait is sufficient
+            time.sleep(3)  # Restored from dcab744
 
             # Click "Alert me to all new filings" radio
             new_filings_radio = wait.until(
@@ -336,51 +267,45 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
                 driver.execute_script("arguments[0].click();", new_filings_radio)
                 logger.info("✓ Clicked radio button using JavaScript click")
 
-            time.sleep(0.15)
+            time.sleep(1)  # Restored from dcab744
 
-            # Click Continue (Enter Search Terms)
+            # Click Continue (Enter Search Terms) - restored from dcab744
             continue_search_button = wait.until(
                 EC.element_to_be_clickable((By.ID, "co_button_continue_Search"))
             )
-            # PHASE 1 OPTIMIZATION: Overlays already removed at start
             continue_search_button.click()
-            # OPTIMIZED: Removed redundant SmartWaits - next element wait is sufficient
+            time.sleep(3)  # Restored from dcab744
 
-            # Fill email
+            # Fill email - restored from dcab744
             email_container = wait.until(
                 EC.element_to_be_clickable((By.ID, "coid_contacts_addedContactsInput_co_collaboratorWidget"))
             )
             email_container.click()
-            # OPTIMIZED: Reduced from 0.3s to 0.15s
-            time.sleep(0.15)
+            time.sleep(1)  # Restored from dcab744
 
             email_input = wait.until(
                 EC.element_to_be_clickable((By.ID, "coid_contacts_autoSuggest_input"))
             )
             email_input.clear()
             email_input.send_keys(request.user_email)
-            # OPTIMIZED: Reduced from 0.3s to 0.15s
-            time.sleep(0.15)
+            time.sleep(1)  # Restored from dcab744
             email_input.send_keys(Keys.ENTER)
-            # OPTIMIZED: Wait for email to be added
-            SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+            time.sleep(2)  # Restored from dcab744 - wait for email to be added
 
-            # Click Continue (Customize delivery)
+            # Click Continue (Customize delivery) - restored from dcab744
             continue_delivery_button = wait.until(
                 EC.element_to_be_clickable((By.ID, "co_button_continue_Delivery"))
             )
-            # PHASE 1 OPTIMIZATION: Overlays already removed at start
             continue_delivery_button.click()
-            # OPTIMIZED: Removed redundant SmartWaits - next element wait is sufficient
+            time.sleep(3)  # Restored from dcab744
 
-            # Select frequency
+            # Select frequency - restored from dcab744
             frequency_dropdown = wait.until(
                 EC.presence_of_element_located((By.ID, "frequencySelect"))
             )
             select = Select(frequency_dropdown)
             select.select_by_value(request.frequency)
-            # OPTIMIZED: Reduced from 0.3s to 0.15s
-            time.sleep(0.15)
+            time.sleep(1)  # Restored from dcab744
 
             # Check alert times
             time_checkbox_ids = {
@@ -409,7 +334,7 @@ async def complete_alert_setup(request: CompleteAlertSetupRequest):
                                 driver.execute_script("arguments[0].click();", checkbox)
                                 logger.info(f"✓ Checked {time_label} checkbox using JavaScript click")
 
-                        time.sleep(0.05)
+                        time.sleep(0.3)  # Restored from dcab744
                     except Exception as e:
                         logger.warning(f"Could not check {time_label} checkbox: {e}")
 
