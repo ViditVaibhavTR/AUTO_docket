@@ -8,6 +8,7 @@ from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from src.utils.logger import get_logger
 from src.utils.screenshot import ScreenshotManager
+from src.utils.smart_waits import SmartWaits
 import time
 
 logger = get_logger(__name__)
@@ -54,7 +55,7 @@ class DocketSelector:
 
             # Wait for page to load
             logger.info("Waiting for page to load completely...")
-            time.sleep(6)  # Give extra time for page to stabilize
+            SmartWaits.wait_for_page_ready(driver, timeout=6)
 
             logger.info(f"Current URL: {driver.current_url}")
             self.screenshot_manager.capture(driver, "before_content_types_search")
@@ -86,11 +87,9 @@ class DocketSelector:
 
                     # Scroll into view and click
                     driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", content_types_element)
-                    time.sleep(0.5)
-                    self.screenshot_manager.capture(driver, "before_clicking_content_types")
                     driver.execute_script("arguments[0].click();", content_types_element)
                     logger.info("✓ Clicked Content Types section")
-                    time.sleep(2)  # Wait for dropdown/section to expand
+                    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
                     self.screenshot_manager.capture(driver, "after_clicking_content_types")
                     logger.info("Screenshot saved: after_clicking_content_types")
                     break
@@ -150,7 +149,7 @@ class DocketSelector:
             logger.info("Clicking Dockets...")
             driver.execute_script("arguments[0].click();", dockets_element)
             logger.info("✓ Successfully clicked Dockets")
-            time.sleep(2)  # Wait for dockets panel to appear
+            SmartWaits.wait_for_ajax_complete(driver, timeout=2)
             self.screenshot_manager.capture(driver, "after_clicking_dockets")
             logger.info("Screenshot saved: after_clicking_dockets")
 
@@ -170,11 +169,9 @@ class DocketSelector:
                         EC.element_to_be_clickable((By.XPATH, f'//*[contains(text(), "{category}")]'))
                     )
                     logger.info(f"✓ Found category: {category}")
-                    self.screenshot_manager.capture(driver, "before_clicking_category")
                     driver.execute_script("arguments[0].click();", category_element)
                     logger.info(f"✓ Clicked on category: {category}")
-                    time.sleep(2)
-                    self.screenshot_manager.capture(driver, "after_clicking_category")
+                    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
                 except Exception as e:
                     logger.error(f"Failed to find category '{category}': {str(e)}")
                     self.screenshot_manager.capture_on_error(driver, "category_not_found")
@@ -182,13 +179,12 @@ class DocketSelector:
 
                 # Wait for specific docket options to appear after page navigation
                 logger.info(f"Waiting for specific dockets page to load...")
-                time.sleep(3)  # Increased wait time for page navigation
+                SmartWaits.wait_for_page_ready(driver, timeout=3)
 
                 # Find and click the specific docket (try multiple selectors)
                 logger.info(f"Looking for specific docket: {specific_docket}")
 
                 # Take screenshot before searching
-                self.screenshot_manager.capture(driver, "before_searching_specific_docket")
 
                 try:
                     docket_wait = WebDriverWait(driver, 15)
@@ -224,12 +220,10 @@ class DocketSelector:
 
                     # Scroll into view before clicking
                     driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", docket_element)
-                    time.sleep(0.5)
 
-                    self.screenshot_manager.capture(driver, "before_clicking_specific_docket")
                     driver.execute_script("arguments[0].click();", docket_element)
                     logger.info(f"✓ Clicked on specific docket: {specific_docket}")
-                    time.sleep(2)
+                    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
                     self.screenshot_manager.capture(driver, "after_clicking_specific_docket")
                 except Exception as e:
                     logger.error(f"Failed to find specific docket '{specific_docket}': {str(e)}")
@@ -240,11 +234,10 @@ class DocketSelector:
                 if district:
                     # Wait for district options to appear
                     logger.info(f"Waiting for district options to load...")
-                    time.sleep(3)
+                    SmartWaits.wait_for_page_ready(driver, timeout=3)
 
                     # Find and click the district
                     logger.info(f"Looking for district: {district}")
-                    self.screenshot_manager.capture(driver, "before_searching_district")
 
                     try:
                         district_wait = WebDriverWait(driver, 15)
@@ -280,12 +273,10 @@ class DocketSelector:
 
                         # Scroll into view before clicking
                         driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", district_element)
-                        time.sleep(0.5)
 
-                        self.screenshot_manager.capture(driver, "before_clicking_district")
                         driver.execute_script("arguments[0].click();", district_element)
                         logger.info(f"✓ Clicked on district: {district}")
-                        time.sleep(2)
+                        SmartWaits.wait_for_ajax_complete(driver, timeout=2)
                         self.screenshot_manager.capture(driver, "after_clicking_district")
                     except Exception as e:
                         logger.error(f"Failed to find district '{district}': {str(e)}")
@@ -296,14 +287,12 @@ class DocketSelector:
                 if docket_number:
                     # Wait for docket number input field to appear
                     logger.info(f"Waiting for docket number input field...")
-                    time.sleep(1)  # Reduced from 3s - using explicit waits in selectors
 
                     # Find and fill the docket number input field
                     logger.info("=" * 60)
                     logger.info("FINDING DOCKET NUMBER INPUT FIELD")
                     logger.info("=" * 60)
                     logger.info(f"Taking screenshot before searching for input...")
-                    self.screenshot_manager.capture(driver, "before_docket_number_input")
 
                     try:
                         docket_wait = WebDriverWait(driver, 5)  # Reduced from 15s - working selectors are first
@@ -395,11 +384,11 @@ class DocketSelector:
                             logger.warning(f"Could not remove maxlength: {e}")
 
                         input_element.clear()
-                        time.sleep(0.3)  # Wait after clear before typing
+                        time.sleep(0.1)  # Reduced - clear is instant
 
                         # Enter docket number and verify
                         input_element.send_keys(docket_number)
-                        time.sleep(0.5)  # Wait for input to register
+                        time.sleep(0.2)  # Reduced - just need brief pause
 
                         # Verify the value was entered correctly
                         entered_value = input_element.get_attribute('value')
@@ -419,7 +408,7 @@ class DocketSelector:
                             logger.info(f"After retry, value in field: '{entered_value}'")
 
                         logger.info(f"✓ Entered: {entered_value}")
-                        time.sleep(0.5)  # Ensure text is fully entered
+                        time.sleep(0.2)  # Reduced - text already verified above
                         logger.info("Taking screenshot AFTER entering docket number...")
                         self.screenshot_manager.capture(driver, "after_entering_docket_number")
 
@@ -428,7 +417,6 @@ class DocketSelector:
                         logger.info("FINDING ORANGE SEARCH BUTTON AT TOP RIGHT")
                         logger.info("=" * 60)
                         logger.info("Taking screenshot BEFORE searching for button...")
-                        self.screenshot_manager.capture(driver, "before_searching_for_search_button")
 
                         # First, make sure any modals are closed
                         try:
@@ -541,8 +529,8 @@ class DocketSelector:
                             driver.execute_script("arguments[0].click();", search_button)
                             logger.info(f"✓ Clicked search button (JavaScript click)")
 
-                        logger.info("Waiting 2 seconds for search results...")
-                        time.sleep(2)  # Reduced from 3s - just ensure click is registered
+                        logger.info("Waiting for search results...")
+                        SmartWaits.wait_for_ajax_complete(driver, timeout=3)  # Search may load results
                         logger.info("Taking screenshot AFTER clicking search...")
                         self.screenshot_manager.capture(driver, "after_clicking_search")
                         logger.info("=" * 60)
