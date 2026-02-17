@@ -384,11 +384,11 @@ class DocketSelector:
                             logger.warning(f"Could not remove maxlength: {e}")
 
                         input_element.clear()
-                        time.sleep(0.1)  # Reduced - clear is instant
+                        time.sleep(0.3)  # CRITICAL - allow browser to process before typing
 
                         # Enter docket number and verify
                         input_element.send_keys(docket_number)
-                        time.sleep(0.2)  # Reduced - just need brief pause
+                        time.sleep(0.5)  # CRITICAL - allow full text to register before validation
 
                         # Verify the value was entered correctly
                         entered_value = input_element.get_attribute('value')
@@ -397,6 +397,14 @@ class DocketSelector:
                         if entered_value != docket_number:
                             logger.warning(f"Value mismatch! Expected: '{docket_number}', Got: '{entered_value}'")
                             logger.info("Retrying with slower input...")
+
+                            # CRITICAL: Remove maxlength again (page JS may have re-added it)
+                            try:
+                                driver.execute_script("arguments[0].removeAttribute('maxlength');", input_element)
+                                logger.info("✓ Removed maxlength attribute (retry)")
+                            except Exception as e:
+                                logger.warning(f"Could not remove maxlength on retry: {e}")
+
                             input_element.clear()
                             time.sleep(0.5)
                             # Type character by character for reliability
