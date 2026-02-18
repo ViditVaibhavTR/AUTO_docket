@@ -229,8 +229,18 @@ class PopupBlocker:
                             el.closest('.co_header') ||
                             el.closest('.co_siteHeader');
 
-                        // Don't remove main navigation OR WestLaw header elements
-                        if (!el.closest('header') && !el.closest('nav') && !isWestLawHeader) {
+                        // Check if element is a form or contains form elements
+                        var isFormElement =
+                            el.tagName === 'FORM' ||
+                            el.tagName === 'INPUT' ||
+                            el.tagName === 'TEXTAREA' ||
+                            el.tagName === 'SELECT' ||
+                            el.tagName === 'BUTTON' ||
+                            el.closest('form') ||
+                            el.querySelector('input, textarea, select');
+
+                        // Don't remove navigation, headers, or form elements
+                        if (!el.closest('header') && !el.closest('nav') && !isWestLawHeader && !isFormElement) {
                             console.log('Removing overlay with z-index: ' + zIndex);
                             el.remove();
                             removed++;
@@ -306,10 +316,14 @@ class PopupBlocker:
         self.remove_cookie_banners(self.driver)
 
         # 5. Re-inject prevention scripts (in case page reloaded)
+        #    Also reset fast check counter so new pages get aggressive blocking
         try:
             initialized = self.driver.execute_script("return window.__popup_blocker_initialized || false;")
             if not initialized:
                 self.inject_popup_prevention_scripts()
+                if self.check_count >= self.fast_check_limit:
+                    logger.info("New page detected — restarting fast popup checks")
+                    self.check_count = 0
         except:
             pass
 
