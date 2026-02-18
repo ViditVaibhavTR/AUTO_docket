@@ -115,3 +115,42 @@ class DistrictsResponse(BaseModel):
     """Response with available districts for a state."""
     state: str = Field(..., description="State name")
     districts: List[str] = Field(..., description="List of available districts")
+
+
+# ---------------------------------------------------------------------------
+# Multi-docket schemas
+# ---------------------------------------------------------------------------
+
+class MultiDocketConfig(BaseModel):
+    """Configuration for a single docket within a multi-docket request."""
+    state: str = Field(..., description="State name (e.g. 'California')")
+    district: str = Field(..., description="District name (e.g. 'Southern District')")
+    docket_number: str = Field(..., description="Docket number (e.g. '3:26-CV-00397')")
+    alert_name: str = Field(..., description="Name of the alert to create")
+    alert_description: Optional[str] = Field("", description="Optional alert description")
+    user_email: str = Field(..., description="Email for alert delivery")
+    frequency: str = Field("daily", description="Alert frequency: daily, weekdays, weekly, biweekly, monthly")
+    alert_times: List[str] = Field(
+        default=["5am", "12pm", "3pm", "5pm"],
+        description="Alert delivery times: 5am, 12pm, 3pm, 5pm"
+    )
+
+
+class MultiDocketRequest(BaseModel):
+    """Request to process 1-3 dockets using tab URL reuse."""
+    session_id: str = Field(..., description="Browser session ID")
+    dockets: List[MultiDocketConfig] = Field(..., description="1 to 3 docket configurations")
+
+
+class MultiDocketResult(BaseModel):
+    """Result for a single docket within a multi-docket operation."""
+    docket_number: str = Field(..., description="Docket number processed")
+    state: str = Field(..., description="State of the docket")
+    status: str = Field(..., description="'success' or 'error'")
+    message: str = Field(..., description="Result message or error detail")
+
+
+class MultiDocketResponse(BaseModel):
+    """Response from multi-docket processing."""
+    status: str = Field(..., description="Overall status: 'success' or 'partial'")
+    results: List[MultiDocketResult] = Field(..., description="Per-docket results")

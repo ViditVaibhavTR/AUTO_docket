@@ -13,6 +13,7 @@ from webdriver_manager.chrome import ChromeDriverManager
 from src.config.settings import settings
 from src.utils.logger import get_logger
 from src.utils.screenshot import ScreenshotManager
+from src.utils.popup_blocker import PopupBlocker
 
 logger = get_logger(__name__)
 
@@ -90,6 +91,9 @@ class BrowserManager:
 
             # Wait for page to load
             self.wait.until(lambda driver: driver.execute_script("return document.readyState") == "complete")
+
+            # Remove cookie consent banners immediately after page load
+            PopupBlocker.remove_cookie_banners(self.driver)
 
             logger.info("Page loaded successfully (no login required - using existing session)")
             return True

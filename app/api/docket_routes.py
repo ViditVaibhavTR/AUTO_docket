@@ -30,7 +30,11 @@ from models.schemas import (
     DistrictSelectionResponse,
     DocketSearchRequest,
     DocketSearchResponse,
+    MultiDocketRequest,
+    MultiDocketResponse,
+    MultiDocketResult,
 )
+from src.automation.tab_manager import TabManager
 
 logger = get_logger(__name__)
 
@@ -336,4 +340,344 @@ async def search_docket(request: DocketSearchRequest):
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Docket search failed: {str(e)}"
+        )
+
+
+# ---------------------------------------------------------------------------
+# Helpers for multi-process (no session management — pure driver functions)
+# ---------------------------------------------------------------------------
+
+def _multi_select_district(driver, district: str):
+    """Select a district link on the current page."""
+    wait = WebDriverWait(driver, 3)
+    PopupBlocker.remove_blocking_overlays(driver)
+
+    district_href_map = {
+        "Central District": "CaliforniaFederalDistrictCourtDocketsCentralDistrict",
+        "Eastern District": "CaliforniaFederalDistrictCourtDocketsEasternDistrict",
+        "Northern District": "CaliforniaFederalDistrictCourtDocketsNorthernDistrict",
+        "Southern District": "CaliforniaFederalDistrictCourtDocketsSouthernDistrict",
+    }
+    district_href = district_href_map.get(district, "")
+
+    selectors = []
+    if district_href:
+        selectors += [
+            (By.XPATH, f'//a[contains(@href, "{district_href}")]'),
+            (By.CSS_SELECTOR, f'a[href*="{district_href}"]'),
+        ]
+    selectors += [
+        (By.XPATH, f'//a[text()="{district}"]'),
+        (By.XPATH, f'//a[contains(text(), "{district}")]'),
+    ]
+
+    element = None
+    for by_type, sel in selectors:
+        try:
+            element = wait.until(EC.element_to_be_clickable((by_type, sel)))
+            break
+        except Exception:
+            continue
+
+    if not element:
+        raise Exception(f"Cannot find district: {district}")
+
+    driver.execute_script("arguments[0].scrollIntoView(true);", element)
+    SmartWaits.wait_for_element_stable(driver, element, timeout=2)
+    driver.execute_script("arguments[0].click();", element)
+    SmartWaits.wait_for_page_ready(driver, timeout=2)
+    logger.info(f"✓ Selected district: {district}")
+
+
+def _multi_create_alert(driver):
+    """Click the Create Alert menu then Create Docket Alert option."""
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    import time
+
+    wait = WebDriverWait(driver, 2)
+    SmartWaits.wait_for_page_ready(driver, timeout=2)
+
+    # Remove blocking overlays using the shared utility (avoids querySelectorAll('*') crash)
+    PopupBlocker.remove_blocking_overlays(driver)
+
+    notification_icon = wait.until(
+        EC.element_to_be_clickable((By.ID, "co_search_alertMenuLink"))
+    )
+    notification_icon.click()
+    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+
+    create_btn = wait.until(
+        EC.element_to_be_clickable((By.XPATH, '//a[contains(text(), "Create Docket Alert")]'))
+    )
+    create_btn.click()
+    # Use longer timeout for new tabs — alert form takes longer to render
+    SmartWaits.wait_for_page_ready(driver, timeout=5)
+    SmartWaits.wait_for_ajax_complete(driver, timeout=3)
+    logger.info("✓ Clicked Create Docket Alert")
+
+
+def _multi_complete_alert_setup(driver, alert_name, alert_description, user_email, frequency, alert_times):
+    """Fill and submit the complete alert setup form."""
+    from selenium.webdriver.common.by import By
+    from selenium.webdriver.common.keys import Keys
+    from selenium.webdriver.support.ui import WebDriverWait, Select
+    from selenium.webdriver.support import expected_conditions as EC
+    import time
+
+    # Use wider timeouts — new tabs need more render time than the main tab
+    wait = WebDriverWait(driver, 8)
+    SmartWaits.wait_for_page_ready(driver, timeout=5)
+
+    # Alert name
+    name_input = wait.until(EC.element_to_be_clickable((By.ID, "optionsAlertName")))
+    name_input.click()
+    time.sleep(0.05)
+    name_input.clear()
+    time.sleep(0.05)
+    name_input.send_keys(alert_name)
+    time.sleep(0.1)
+
+    # Alert description (optional)
+    if alert_description:
+        desc_input = wait.until(EC.element_to_be_clickable((By.ID, "optionsAlertDescription")))
+        desc_input.click()
+        time.sleep(0.05)
+        desc_input.clear()
+        time.sleep(0.05)
+        desc_input.send_keys(alert_description)
+        time.sleep(0.1)
+
+    # Continue (Basics)
+    btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Basics")))
+    try:
+        btn.click()
+    except Exception:
+        driver.execute_script("arguments[0].click();", btn)
+
+    # All Content tab
+    all_content_tab = wait.until(
+        EC.element_to_be_clickable((By.XPATH, '//button[@role="tab"][@aria-controls="All_Content"]'))
+    )
+    all_content_tab.click()
+    SmartWaits.wait_for_ajax_complete(driver, timeout=1)
+
+    # Continue (Select Content)
+    btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Content")))
+    try:
+        btn.click()
+    except Exception:
+        driver.execute_script("arguments[0].click();", btn)
+
+    # Alert me to all new filings radio
+    radio = wait.until(EC.element_to_be_clickable((By.ID, "co_search_alertMeToNewFilings")))
+    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", radio)
+    time.sleep(0.3)
+    try:
+        radio.click()
+    except Exception:
+        driver.execute_script("arguments[0].click();", radio)
+    time.sleep(0.15)
+
+    # Continue (Enter Search Terms)
+    btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Search")))
+    try:
+        btn.click()
+    except Exception:
+        driver.execute_script("arguments[0].click();", btn)
+
+    # Email
+    email_container = wait.until(
+        EC.element_to_be_clickable((By.ID, "coid_contacts_addedContactsInput_co_collaboratorWidget"))
+    )
+    email_container.click()
+    time.sleep(0.15)
+    email_input = wait.until(EC.element_to_be_clickable((By.ID, "coid_contacts_autoSuggest_input")))
+    email_input.clear()
+    email_input.send_keys(user_email)
+    time.sleep(0.15)
+    email_input.send_keys(Keys.ENTER)
+    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+
+    # Continue (Customize delivery)
+    btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Delivery")))
+    try:
+        btn.click()
+    except Exception:
+        driver.execute_script("arguments[0].click();", btn)
+
+    # Frequency
+    freq_dropdown = wait.until(EC.presence_of_element_located((By.ID, "frequencySelect")))
+    Select(freq_dropdown).select_by_value(frequency)
+    time.sleep(0.15)
+
+    # Alert times
+    time_checkbox_ids = {
+        "5am": "amExecutionTime5",
+        "12pm": "pmExecutionTime12",
+        "3pm": "pmExecutionTime3",
+        "5pm": "pmExecutionTime5",
+    }
+    for label in alert_times:
+        checkbox_id = time_checkbox_ids.get(label)
+        if not checkbox_id:
+            continue
+        try:
+            cb = wait.until(EC.presence_of_element_located((By.ID, checkbox_id)))
+            if not cb.is_selected():
+                driver.execute_script("arguments[0].scrollIntoView({block:'center'});", cb)
+                time.sleep(0.2)
+                try:
+                    cb.click()
+                except Exception:
+                    driver.execute_script("arguments[0].click();", cb)
+            time.sleep(0.05)
+        except Exception as e:
+            logger.warning(f"Could not check {label} checkbox: {e}")
+
+    # Save alert
+    save_btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_saveAlert")))
+    try:
+        save_btn.click()
+    except Exception:
+        driver.execute_script("arguments[0].click();", save_btn)
+    SmartWaits.wait_for_page_ready(driver, timeout=2)
+    logger.info("✓ Alert saved")
+
+
+# ---------------------------------------------------------------------------
+# Multi-docket endpoint
+# ---------------------------------------------------------------------------
+
+@app.post("/api/v1/docket/multi-process", response_model=MultiDocketResponse)
+async def multi_process_dockets(request: MultiDocketRequest):
+    """
+    Process 1-3 dockets end-to-end (state → district → docket search → alert) using
+    tab URL reuse: navigate to 'Select the state:' page once, then open new tabs
+    with that URL for each additional docket instead of re-navigating from scratch.
+    """
+    if not (1 <= len(request.dockets) <= 3):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Must provide 1 to 3 dockets"
+        )
+
+    if request.session_id not in browser_sessions:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+
+    session_lock = session_locks.get(request.session_id)
+    if not session_lock:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session lock not found"
+        )
+
+    def _run_multi_process():
+        with session_lock:
+            session = browser_sessions[request.session_id]
+            driver = session["driver"]
+            main_handle = driver.current_window_handle
+
+            docket_selector = DocketSelector()
+            results = []
+
+            # Step 1: Navigate to state selection page once and capture URL
+            logger.info("Navigating to 'Select the state:' page...")
+            state_page_url = docket_selector.navigate_to_state_page(driver)
+            logger.info(f"State page URL: {state_page_url}")
+
+            # Step 2: Process each docket sequentially
+            for i, config in enumerate(request.dockets):
+                logger.info(f"--- Processing docket {i+1}/{len(request.dockets)}: "
+                             f"{config.docket_number} ({config.state}) ---")
+                try:
+                    if i > 0:
+                        # Open new tab pre-loaded with the state selection page URL
+                        logger.info(f"Opening new tab with state page URL for docket {i+1}...")
+                        TabManager.open_tab_with_url(driver, state_page_url)
+                        SmartWaits.wait_for_page_ready(driver, timeout=8)
+
+                    # Select state
+                    docket_selector.select_state_from_page(driver, config.state)
+
+                    # Select district
+                    _multi_select_district(driver, config.district)
+
+                    # Search docket number (uses critical maxlength fix + char-by-char)
+                    docket_selector.search_docket_number(driver, config.docket_number)
+
+                    # Wait for search results page to fully render before creating alert.
+                    # In single-docket flow this time comes from the HTTP round-trip +
+                    # header visibility check (docket_routes.py:312-325). Without it
+                    # Chrome's renderer crashes before it finishes painting.
+                    try:
+                        WebDriverWait(driver, 5).until(
+                            EC.visibility_of_element_located((By.TAG_NAME, "header"))
+                        )
+                        logger.info("✓ Search results header visible")
+                    except Exception:
+                        logger.warning("Header not visible within 5s, continuing anyway")
+                    time.sleep(1)  # Extra settle time for renderer
+
+                    # Create alert
+                    _multi_create_alert(driver)
+
+                    # Give the alert form time to fully render before interacting
+                    time.sleep(2)
+
+                    # Complete alert setup form
+                    _multi_complete_alert_setup(
+                        driver,
+                        config.alert_name,
+                        config.alert_description or "",
+                        config.user_email,
+                        config.frequency,
+                        config.alert_times,
+                    )
+
+                    results.append(MultiDocketResult(
+                        docket_number=config.docket_number,
+                        state=config.state,
+                        status="success",
+                        message="Alert created successfully",
+                    ))
+                    logger.info(f"✓ Docket {config.docket_number} completed")
+
+                    # Let browser settle before opening next tab
+                    if i < len(request.dockets) - 1:
+                        time.sleep(3)
+
+                except Exception as e:
+                    logger.error(f"✗ Docket {config.docket_number} failed: {e}")
+                    screenshot_manager = ScreenshotManager()
+                    screenshot_manager.capture_on_error(driver, f"multi_docket_error_{i}")
+                    results.append(MultiDocketResult(
+                        docket_number=config.docket_number,
+                        state=config.state,
+                        status="error",
+                        message=str(e),
+                    ))
+
+            # Close extra tabs and return to main
+            TabManager.close_extra_tabs(driver, main_handle)
+            session["state"] = "multi_dockets_complete"
+
+            all_ok = all(r.status == "success" for r in results)
+            return results, "success" if all_ok else "partial"
+
+    try:
+        results, overall_status = await asyncio.to_thread(_run_multi_process)
+        return MultiDocketResponse(status=overall_status, results=results)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Multi-process dockets failed: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Multi-process dockets failed: {str(e)}"
         )

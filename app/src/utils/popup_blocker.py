@@ -26,9 +26,9 @@ class PopupBlocker:
         self.running = False
         self.thread = None
         self.check_count = 0  # Track number of checks
-        self.fast_check_limit = 4  # First 4 checks are fast
+        self.fast_check_limit = 8  # First 8 checks are fast
         self.fast_interval = 0.5  # Fast interval: 0.5 seconds
-        self.slow_interval = 3.0  # Slow interval: 3 seconds after first 4 checks
+        self.slow_interval = 3.0  # Slow interval: 3 seconds after first 8 checks
 
     def inject_popup_prevention_scripts(self):
         """
@@ -68,7 +68,17 @@ class PopupBlocker:
                         '[class*="dialog"]',
                         '[id*="modal"]',
                         '[id*="popup"]',
-                        '[id*="overlay"]'
+                        '[id*="overlay"]',
+                        '[class*="cookie"]',
+                        '[class*="consent"]',
+                        '[class*="privacy"]',
+                        '[class*="banner"]',
+                        '[class*="onetrust"]',
+                        '[class*="OneTrust"]',
+                        '[id*="cookie"]',
+                        '[id*="consent"]',
+                        '[id*="onetrust"]',
+                        '[id*="truste"]'
                     ];
 
                     modalSelectors.forEach(function(selector) {
@@ -242,6 +252,37 @@ class PopupBlocker:
             logger.debug(f"Overlay removal error: {e}")
             return False
 
+    @staticmethod
+    def remove_cookie_banners(driver):
+        """Directly remove known cookie consent frameworks by ID/class.
+        No getComputedStyle, no z-index checks — just fast element removal."""
+        try:
+            driver.execute_script("""
+                // Remove by exact IDs (OneTrust + common patterns)
+                var ids = [
+                    'onetrust-banner-sdk', 'onetrust-consent-sdk',
+                    'ot-sdk-btn-floating', 'onetrust-pc-dark-filter',
+                    'CookieConsentBanner', 'cookie-banner', 'cookieBanner',
+                    'cookie-consent', 'privacy-banner', 'truste-consent-track'
+                ];
+                ids.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) { el.remove(); }
+                });
+
+                // Remove by class selectors
+                var selectors = [
+                    '.optanon-alert-box-wrapper', '.onetrust-pc-dark-filter',
+                    '.cookie-notice', '.privacy-banner', '.cookie-consent-banner',
+                    '#ot-sdk-btn-floating', '.ot-sdk-container'
+                ];
+                selectors.forEach(function(sel) {
+                    document.querySelectorAll(sel).forEach(function(el) { el.remove(); });
+                });
+            """)
+        except Exception:
+            pass
+
     def block_popups_once(self):
         """
         Run one cycle of popup blocking.
@@ -261,7 +302,10 @@ class PopupBlocker:
         if self.remove_blocking_overlays(self.driver):
             blocked = True
 
-        # 4. Re-inject prevention scripts (in case page reloaded)
+        # 4. Remove cookie consent banners (direct ID/class removal)
+        self.remove_cookie_banners(self.driver)
+
+        # 5. Re-inject prevention scripts (in case page reloaded)
         try:
             initialized = self.driver.execute_script("return window.__popup_blocker_initialized || false;")
             if not initialized:
