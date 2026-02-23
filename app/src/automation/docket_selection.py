@@ -709,34 +709,60 @@ class DocketSelector:
             if not input_element:
                 raise Exception("Cannot find docket number input field")
 
-            # CRITICAL: Remove maxlength before typing
+            # CRITICAL: Remove maxlength AND install MutationObserver to prevent
+            # WestLaw's JS from re-adding it (race condition on original tab)
             try:
-                driver.execute_script("arguments[0].removeAttribute('maxlength');", input_element)
-                logger.info("✓ Removed maxlength restriction")
+                driver.execute_script("""
+                    var el = arguments[0];
+                    el.removeAttribute('maxlength');
+                    if (!el.__maxlengthObserver) {
+                        var obs = new MutationObserver(function(mutations) {
+                            mutations.forEach(function(m) {
+                                if (m.type === 'attributes' && m.attributeName === 'maxlength') {
+                                    el.removeAttribute('maxlength');
+                                }
+                            });
+                        });
+                        obs.observe(el, {attributes: true});
+                        el.__maxlengthObserver = obs;
+                    }
+                """, input_element)
+                logger.info("✓ Removed maxlength + installed MutationObserver guard")
             except Exception as e:
                 logger.warning(f"Could not remove maxlength: {e}")
 
-            input_element.clear()
+            # Primary method: Set value via JavaScript (bypasses maxlength entirely)
+            input_element.click()
+            time.sleep(0.1)
+            driver.execute_script("""
+                var el = arguments[0];
+                el.value = '';
+                el.value = arguments[1];
+                el.dispatchEvent(new Event('input', {bubbles: true}));
+                el.dispatchEvent(new Event('change', {bubbles: true}));
+            """, input_element, docket_number)
             time.sleep(0.3)
-            input_element.send_keys(docket_number)
-            time.sleep(0.5)
 
-            # Verify — retry char-by-char if truncated
+            # Verify the value
             entered_value = input_element.get_attribute("value")
             if entered_value != docket_number:
-                logger.warning(f"Mismatch! Expected '{docket_number}', got '{entered_value}'. Retrying char-by-char...")
-                try:
-                    driver.execute_script("arguments[0].removeAttribute('maxlength');", input_element)
-                except Exception:
-                    pass
+                logger.warning(f"JS value set mismatch! Expected '{docket_number}', got '{entered_value}'. Retrying with send_keys char-by-char...")
+                # Fallback: clear and type char-by-char (MutationObserver still active)
                 input_element.clear()
-                time.sleep(0.5)
+                time.sleep(0.3)
                 for char in docket_number:
                     input_element.send_keys(char)
                     time.sleep(0.05)
                 time.sleep(0.3)
                 entered_value = input_element.get_attribute("value")
-                logger.info(f"After retry: '{entered_value}'")
+                logger.info(f"After char-by-char retry: '{entered_value}'")
+
+            # Hard error if STILL truncated — do not silently search wrong number
+            if entered_value != docket_number:
+                raise Exception(
+                    f"Docket number entry failed after retry. "
+                    f"Expected '{docket_number}', got '{entered_value}'"
+                )
 
             logger.info(f"✓ Docket number in field: '{entered_value}'")
 
