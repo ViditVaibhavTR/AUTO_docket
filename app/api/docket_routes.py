@@ -143,12 +143,13 @@ async def select_district(request: DistrictSelectionRequest):
             logger.info("Removing blocking overlays proactively...")
             PopupBlocker.remove_blocking_overlays(driver)
 
-            # Map district names to their exact href paths
+            # Map district names to state-agnostic href suffixes
             district_href_map = {
-                "Central District": "CaliforniaFederalDistrictCourtDocketsCentralDistrict",
-                "Eastern District": "CaliforniaFederalDistrictCourtDocketsEasternDistrict",
-                "Northern District": "CaliforniaFederalDistrictCourtDocketsNorthernDistrict",
-                "Southern District": "CaliforniaFederalDistrictCourtDocketsSouthernDistrict"
+                "Central District": "CentralDistrict",
+                "Eastern District": "EasternDistrict",
+                "Northern District": "NorthernDistrict",
+                "Southern District": "SouthernDistrict",
+                "Western District": "WesternDistrict",
             }
 
             district_href = district_href_map.get(request.district, "")
@@ -353,10 +354,11 @@ def _multi_select_district(driver, district: str):
     PopupBlocker.remove_blocking_overlays(driver)
 
     district_href_map = {
-        "Central District": "CaliforniaFederalDistrictCourtDocketsCentralDistrict",
-        "Eastern District": "CaliforniaFederalDistrictCourtDocketsEasternDistrict",
-        "Northern District": "CaliforniaFederalDistrictCourtDocketsNorthernDistrict",
-        "Southern District": "CaliforniaFederalDistrictCourtDocketsSouthernDistrict",
+        "Central District": "CentralDistrict",
+        "Eastern District": "EasternDistrict",
+        "Northern District": "NorthernDistrict",
+        "Southern District": "SouthernDistrict",
+        "Western District": "WesternDistrict",
     }
     district_href = district_href_map.get(district, "")
 
