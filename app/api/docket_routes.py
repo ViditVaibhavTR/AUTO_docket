@@ -482,8 +482,10 @@ def _multi_complete_alert_setup(driver, alert_name, alert_description, user_emai
         driver.execute_script("arguments[0].click();", radio)
     time.sleep(0.15)
 
-    # Continue (Enter Search Terms)
+    # Continue (Enter Search Terms) — must scroll into view first
     btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Search")))
+    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
+    time.sleep(0.3)
     try:
         btn.click()
     except Exception:
@@ -502,8 +504,10 @@ def _multi_complete_alert_setup(driver, alert_name, alert_description, user_emai
     email_input.send_keys(Keys.ENTER)
     SmartWaits.wait_for_ajax_complete(driver, timeout=2)
 
-    # Continue (Customize delivery)
+    # Continue (Customize delivery) — must scroll into view first
     btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Delivery")))
+    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
+    time.sleep(0.3)
     try:
         btn.click()
     except Exception:
@@ -544,7 +548,8 @@ def _multi_complete_alert_setup(driver, alert_name, alert_description, user_emai
         save_btn.click()
     except Exception:
         driver.execute_script("arguments[0].click();", save_btn)
-    SmartWaits.wait_for_page_ready(driver, timeout=2)
+    # Wait 10s for alert to actually save before tab gets closed
+    time.sleep(10)
     logger.info("✓ Alert saved")
 
 
@@ -555,14 +560,14 @@ def _multi_complete_alert_setup(driver, alert_name, alert_description, user_emai
 @app.post("/api/v1/docket/multi-process", response_model=MultiDocketResponse)
 async def multi_process_dockets(request: MultiDocketRequest):
     """
-    Process 1-3 dockets end-to-end (state → district → docket search → alert) using
+    Process 1-20 dockets end-to-end (state → district → docket search → alert) using
     tab URL reuse: navigate to 'Select the state:' page once, then open new tabs
     with that URL for each additional docket instead of re-navigating from scratch.
     """
-    if not (1 <= len(request.dockets) <= 3):
+    if not (1 <= len(request.dockets) <= 20):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Must provide 1 to 3 dockets"
+            detail="Must provide 1 to 20 dockets"
         )
 
     if request.session_id not in browser_sessions:
@@ -649,10 +654,6 @@ async def multi_process_dockets(request: MultiDocketRequest):
                     ))
                     logger.info(f"✓ Docket {config.docket_number} completed")
 
-                    # Let browser settle before opening next tab
-                    if i < len(request.dockets) - 1:
-                        time.sleep(3)
-
                 except Exception as e:
                     logger.error(f"✗ Docket {config.docket_number} failed: {e}")
                     screenshot_manager = ScreenshotManager()
@@ -663,6 +664,18 @@ async def multi_process_dockets(request: MultiDocketRequest):
                         status="error",
                         message=str(e),
                     ))
+
+                finally:
+                    # Close current tab after each docket (success or fail) to prevent
+                    # memory buildup — with 20 tabs Chrome crashes from memory pressure
+                    if i > 0:
+                        try:
+                            driver.close()
+                            driver.switch_to.window(main_handle)
+                            logger.info(f"Closed tab for docket {i+1}, back to main")
+                        except Exception:
+                            pass
+                    time.sleep(1)
 
             # Close extra tabs and return to main
             TabManager.close_extra_tabs(driver, main_handle)

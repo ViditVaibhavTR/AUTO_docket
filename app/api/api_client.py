@@ -222,7 +222,7 @@ class DocketAlertAPIClient:
         dockets: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
-        Process 1-3 dockets end-to-end in a single call using tab URL reuse.
+        Process 1-20 dockets end-to-end in a single call using tab URL reuse.
 
         Each docket dict must contain:
             state, district, docket_number, alert_name,
@@ -235,7 +235,7 @@ class DocketAlertAPIClient:
         response = self.session.post(
             f"{self.base_url}/api/v1/docket/multi-process",
             json={"session_id": session_id, "dockets": dockets},
-            timeout=300  # allow up to 5 minutes for multi-docket automation
+            timeout=1200  # allow up to 20 minutes for multi-docket automation
         )
         response.raise_for_status()
         return response.json()

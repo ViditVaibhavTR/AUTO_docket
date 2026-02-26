@@ -137,9 +137,9 @@ class MultiDocketConfig(BaseModel):
 
 
 class MultiDocketRequest(BaseModel):
-    """Request to process 1-3 dockets using tab URL reuse."""
+    """Request to process 1-20 dockets using tab URL reuse."""
     session_id: str = Field(..., description="Browser session ID")
-    dockets: List[MultiDocketConfig] = Field(..., description="1 to 3 docket configurations")
+    dockets: List[MultiDocketConfig] = Field(..., description="1 to 20 docket configurations")
 
 
 class MultiDocketResult(BaseModel):
