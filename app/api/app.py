@@ -112,4 +112,4 @@ app.add_middleware(
 
 # Import routes to register them with the app
 # These imports must come after app is created to avoid circular imports
-from api import health_routes, session_routes, docket_routes, alert_routes  # noqa: E402, F401
+from api import health_routes, session_routes, docket_routes, alert_routes, csv_routes  # noqa: E402, F401
