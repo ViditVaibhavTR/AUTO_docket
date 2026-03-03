@@ -489,18 +489,27 @@ def _multi_complete_alert_setup(driver, alert_name, alert_description, user_emai
     driver.execute_script("arguments[0].click();", btn)
     SmartWaits.wait_for_ajax_complete(driver, timeout=2)
 
-    # Email
-    email_container = wait.until(
-        EC.element_to_be_clickable((By.ID, "coid_contacts_addedContactsInput_co_collaboratorWidget"))
-    )
-    email_container.click()
-    time.sleep(0.15)
-    email_input = wait.until(EC.element_to_be_clickable((By.ID, "coid_contacts_autoSuggest_input")))
-    email_input.clear()
-    email_input.send_keys(user_email)
-    time.sleep(0.15)
-    email_input.send_keys(Keys.ENTER)
-    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+    # Email — check if already pre-filled from previous docket, skip if so
+    try:
+        existing_email = driver.find_element(
+            By.XPATH,
+            f'//ul[@id="coid_contacts_addedContactsInput_co_collaboratorWidget"]//button[contains(text(), "{user_email}")]'
+        )
+        if existing_email:
+            logger.info(f"✓ Email already present: {user_email}")
+    except Exception:
+        # Email not pre-filled — enter it
+        email_container = wait.until(
+            EC.element_to_be_clickable((By.ID, "coid_contacts_addedContactsInput_co_collaboratorWidget"))
+        )
+        email_container.click()
+        time.sleep(0.15)
+        email_input = wait.until(EC.element_to_be_clickable((By.ID, "coid_contacts_autoSuggest_input")))
+        email_input.clear()
+        email_input.send_keys(user_email)
+        time.sleep(0.15)
+        email_input.send_keys(Keys.ENTER)
+        SmartWaits.wait_for_ajax_complete(driver, timeout=2)
 
     # Continue (Customize delivery)
     btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Delivery")))
