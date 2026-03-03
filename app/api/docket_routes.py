@@ -453,10 +453,10 @@ def _multi_complete_alert_setup(driver, alert_name, alert_description, user_emai
 
     # Continue (Basics)
     btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Basics")))
-    try:
-        btn.click()
-    except Exception:
-        driver.execute_script("arguments[0].click();", btn)
+    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
+    time.sleep(0.5)
+    driver.execute_script("arguments[0].click();", btn)
+    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
 
     # All Content tab
     all_content_tab = wait.until(
@@ -467,10 +467,10 @@ def _multi_complete_alert_setup(driver, alert_name, alert_description, user_emai
 
     # Continue (Select Content)
     btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Content")))
-    try:
-        btn.click()
-    except Exception:
-        driver.execute_script("arguments[0].click();", btn)
+    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
+    time.sleep(0.5)
+    driver.execute_script("arguments[0].click();", btn)
+    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
 
     # Alert me to all new filings radio
     radio = wait.until(EC.element_to_be_clickable((By.ID, "co_search_alertMeToNewFilings")))
@@ -482,14 +482,12 @@ def _multi_complete_alert_setup(driver, alert_name, alert_description, user_emai
         driver.execute_script("arguments[0].click();", radio)
     time.sleep(0.15)
 
-    # Continue (Enter Search Terms) — must scroll into view first
+    # Continue (Enter Search Terms)
     btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Search")))
     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
-    time.sleep(0.3)
-    try:
-        btn.click()
-    except Exception:
-        driver.execute_script("arguments[0].click();", btn)
+    time.sleep(0.5)
+    driver.execute_script("arguments[0].click();", btn)
+    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
 
     # Email
     email_container = wait.until(
@@ -504,14 +502,12 @@ def _multi_complete_alert_setup(driver, alert_name, alert_description, user_emai
     email_input.send_keys(Keys.ENTER)
     SmartWaits.wait_for_ajax_complete(driver, timeout=2)
 
-    # Continue (Customize delivery) — must scroll into view first
+    # Continue (Customize delivery)
     btn = wait.until(EC.element_to_be_clickable((By.ID, "co_button_continue_Delivery")))
     driver.execute_script("arguments[0].scrollIntoView({block:'center'});", btn)
-    time.sleep(0.3)
-    try:
-        btn.click()
-    except Exception:
-        driver.execute_script("arguments[0].click();", btn)
+    time.sleep(0.5)
+    driver.execute_script("arguments[0].click();", btn)
+    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
 
     # Frequency
     freq_dropdown = wait.until(EC.presence_of_element_located((By.ID, "frequencySelect")))
