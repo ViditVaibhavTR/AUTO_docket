@@ -19,7 +19,7 @@ from src.config.settings import settings
 from src.automation.browser import BrowserManager
 from src.automation.gateway_config import GatewayConfigurator
 from src.automation.iac_config import IACConfigurator
-from src.automation.westlaw_login import WestLawLogin
+import threading
 from src.utils.logger import get_logger
 from api.app import app, browser_sessions, sessions_lock, session_locks, session_timeouts
 from models.schemas import (
@@ -35,6 +35,37 @@ logger = get_logger(__name__)
 active_automations = {}  # {client_ip: timestamp}
 MAX_CONCURRENT_AUTOMATIONS = 2
 RATE_LIMIT_SECONDS = 30
+
+
+
+def _poll_for_login_complete(session_id, driver):
+    """Background thread: poll browser every 2s until WestLaw home page detected.
+    After detection: minimize the browser and update session state."""
+    max_wait = 300  # 5 minutes max
+    start = time.time()
+    while time.time() - start < max_wait:
+        try:
+            url = driver.current_url
+            if 'next.westlaw.com' in url or 'next.qed.westlaw.com' in url:
+                page = driver.page_source
+                if 'Sign in' not in page and 'co_clientIDTextbox' not in page and ('History' in page or 'Folders' in page):
+                    logger.info(f'WestLaw login complete for session {session_id}')
+
+                    # Minimize the browser so it's out of the way
+                    try:
+                        driver.minimize_window()
+                    except Exception:
+                        pass
+
+                    if session_id in browser_sessions:
+                        browser_sessions[session_id]['state'] = 'logged_in'
+
+                    logger.info(f'Login confirmed for session {session_id}')
+                    return
+        except Exception as e:
+            logger.debug(f'Poll check error: {e}')
+        time.sleep(2)
+    logger.warning(f'Login detection timed out for session {session_id}')
 
 
 @app.post("/api/v1/automation/start", response_model=AutomationStartResponse)
@@ -91,27 +122,49 @@ async def start_automation(automation_request: AutomationStartRequest, request: 
         # Run blocking browser operations in thread pool
         def _start_browser_automation():
             nonlocal browser_manager
-            # Start browser
+
+            # Phase 1: Headless browser for gateway + IAC config (user doesn't see this)
+            settings.HEADLESS = True
             browser_manager = BrowserManager()
             driver = browser_manager.start()
 
-            # Navigate to routing page
             browser_manager.login()
 
-            # Configure Gateway Live External (allow failures)
             try:
                 gateway_config = GatewayConfigurator()
                 gateway_config.configure_gateway(driver)
             except Exception as e:
                 logger.warning(f"Gateway configuration failed (continuing): {e}")
 
-            # Configure Infrastructure Access Controls
             iac_config = IACConfigurator()
             iac_config.configure_iac(driver)
 
-            # Login to WestLaw Precision
-            westlaw_login = WestLawLogin()
-            westlaw_login.login(driver)
+            logger.info("Gateway and IAC configured in headless mode")
+
+            # Capture cookies and current URL from headless browser
+            cookies = driver.get_cookies()
+            login_url = driver.current_url
+            driver.quit()
+            logger.info("Closed headless browser after config")
+
+            # Phase 2: Open visible browser directly on login page
+            settings.HEADLESS = False
+            browser_manager = BrowserManager()
+            driver = browser_manager.start()
+
+            # Navigate to login URL and inject cookies
+            driver.get(login_url)
+            time.sleep(1)
+            driver.delete_all_cookies()
+            for cookie in cookies:
+                try:
+                    driver.add_cookie(cookie)
+                except Exception:
+                    pass
+            driver.get(login_url)
+            time.sleep(1)
+
+            logger.info("Visible browser opened on login page for user")
 
             return driver, browser_manager
 
@@ -123,20 +176,27 @@ async def start_automation(automation_request: AutomationStartRequest, request: 
             browser_sessions[session_id] = {
                 "driver": driver,
                 "browser_manager": browser_manager,
-                "state": "logged_in"
+                "state": "awaiting_login"
             }
             session_locks[session_id] = Lock()
             session_timeouts[session_id] = datetime.now()
 
-        logger.info(f"Automation started successfully for session {session_id}")
+        # Start background thread to detect when user completes login
+        threading.Thread(
+            target=_poll_for_login_complete,
+            args=(session_id, driver),
+            daemon=True
+        ).start()
+
+        logger.info(f"Automation started for session {session_id} - awaiting user login")
 
         # Remove "in progress" marker on success
         if client_ip in active_automations:
             del active_automations[client_ip]
 
         return AutomationStartResponse(
-            status="login_success",
-            message="Successfully logged in and configured",
+            status="awaiting_login",
+            message="Gateway and IAC configured. Please login to WestLaw in the browser.",
             session_id=session_id
         )
 
@@ -154,6 +214,18 @@ async def start_automation(automation_request: AutomationStartRequest, request: 
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Automation failed: {str(e)}"
         )
+
+
+
+@app.get("/api/v1/session/{session_id}/status")
+async def get_session_status(session_id: str):
+    """Get current session state. Frontend polls this to detect login completion."""
+    if session_id not in browser_sessions:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Session not found"
+        )
+    return {"status": browser_sessions[session_id].get("state", "unknown")}
 
 
 @app.post("/api/v1/session/cleanup", response_model=SessionCleanupResponse)
