@@ -682,6 +682,67 @@ async def multi_process_dockets(request: MultiDocketRequest):
                             pass
                     time.sleep(1)
 
+            # Retry phase: retry failed dockets up to 3 times each
+            MAX_RETRIES = 3
+            for retry_round in range(1, MAX_RETRIES + 1):
+                failed_indices = [i for i, r in enumerate(results) if r.status == "error"]
+                if not failed_indices:
+                    break
+                logger.info(f"--- Retry round {retry_round}/{MAX_RETRIES}: "
+                           f"{len(failed_indices)} failed docket(s) ---")
+
+                for idx in failed_indices:
+                    config = request.dockets[idx]
+                    logger.info(f"Retrying docket {config.docket_number}...")
+                    try:
+                        TabManager.open_tab_with_url(driver, state_page_url)
+                        SmartWaits.wait_for_page_ready(driver, timeout=8)
+
+                        docket_selector.select_state_from_page(driver, config.state)
+                        _multi_select_district(driver, config.district)
+                        docket_selector.search_docket_number(driver, config.docket_number)
+
+                        try:
+                            WebDriverWait(driver, 5).until(
+                                EC.visibility_of_element_located((By.TAG_NAME, "header"))
+                            )
+                        except Exception:
+                            pass
+                        time.sleep(1)
+
+                        _multi_create_alert(driver)
+                        time.sleep(2)
+                        _multi_complete_alert_setup(
+                            driver, config.alert_name,
+                            config.alert_description or "",
+                            config.user_email, config.frequency, config.alert_times,
+                        )
+
+                        results[idx] = MultiDocketResult(
+                            docket_number=config.docket_number,
+                            state=config.state,
+                            status="success",
+                            message=f"Alert created successfully (retry {retry_round})",
+                        )
+                        logger.info(f"Retry succeeded for {config.docket_number}")
+
+                    except Exception as e:
+                        logger.error(f"Retry {retry_round} failed for {config.docket_number}: {e}")
+                        results[idx] = MultiDocketResult(
+                            docket_number=config.docket_number,
+                            state=config.state,
+                            status="error",
+                            message=str(e),
+                        )
+
+                    finally:
+                        try:
+                            driver.close()
+                            driver.switch_to.window(main_handle)
+                        except Exception:
+                            pass
+                        time.sleep(1)
+
             # Close extra tabs and return to main
             TabManager.close_extra_tabs(driver, main_handle)
             session["state"] = "multi_dockets_complete"
