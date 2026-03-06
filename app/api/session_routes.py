@@ -38,9 +38,39 @@ RATE_LIMIT_SECONDS = 30
 
 
 
+def _keep_chrome_hidden(session_id):
+    """Background thread: continuously hide all Chrome windows every 0.5s."""
+    import ctypes
+    import ctypes.wintypes
+
+    WNDENUMPROC = ctypes.WINFUNCTYPE(
+        ctypes.wintypes.BOOL,
+        ctypes.wintypes.HWND,
+        ctypes.wintypes.LPARAM
+    )
+
+    def _hide_callback(hwnd, _):
+        length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+        if length > 0:
+            buf = ctypes.create_unicode_buffer(length + 1)
+            ctypes.windll.user32.GetWindowTextW(hwnd, buf, length + 1)
+            if 'Chrome' in buf.value or 'chrome' in buf.value:
+                ctypes.windll.user32.ShowWindow(hwnd, 0)  # SW_HIDE
+        return True
+
+    callback = WNDENUMPROC(_hide_callback)
+
+    while session_id in browser_sessions:
+        try:
+            ctypes.windll.user32.EnumWindows(callback, 0)
+        except Exception:
+            pass
+        time.sleep(0.5)
+
+
 def _poll_for_login_complete(session_id, driver):
     """Background thread: poll browser every 2s until WestLaw home page detected.
-    After detection: minimize the browser and update session state."""
+    After detection: hide Chrome window via Windows API (same browser, session intact)."""
     max_wait = 300  # 5 minutes max
     start = time.time()
     while time.time() - start < max_wait:
@@ -51,11 +81,49 @@ def _poll_for_login_complete(session_id, driver):
                 if 'Sign in' not in page and 'co_clientIDTextbox' not in page and ('History' in page or 'Folders' in page):
                     logger.info(f'WestLaw login complete for session {session_id}')
 
-                    # Minimize the browser so it's out of the way
+                    # Hide ALL Chrome windows using Windows API SW_HIDE
+                    # SW_HIDE makes windows completely vanish (not even in taskbar)
                     try:
-                        driver.minimize_window()
+                        import ctypes
+                        import ctypes.wintypes
+
+                        def _hide_chrome_callback(hwnd, _):
+                            length = ctypes.windll.user32.GetWindowTextLengthW(hwnd)
+                            if length > 0:
+                                buf = ctypes.create_unicode_buffer(length + 1)
+                                ctypes.windll.user32.GetWindowTextW(hwnd, buf, length + 1)
+                                title = buf.value
+                                if 'Chrome' in title or 'chrome' in title:
+                                    ctypes.windll.user32.ShowWindow(hwnd, 0)  # SW_HIDE
+                            return True
+
+                        WNDENUMPROC = ctypes.WINFUNCTYPE(
+                            ctypes.wintypes.BOOL,
+                            ctypes.wintypes.HWND,
+                            ctypes.wintypes.LPARAM
+                        )
+                        ctypes.windll.user32.EnumWindows(WNDENUMPROC(_hide_chrome_callback), 0)
+                        logger.info('Chrome windows hidden via Windows API (SW_HIDE)')
+                    except Exception as e:
+                        logger.warning(f'Could not hide Chrome window: {e}')
+                        try:
+                            driver.minimize_window()
+                        except Exception:
+                            pass
+
+                    # Move Chrome off-screen — new tabs inherit this position (no flash)
+                    try:
+                        driver.set_window_position(-32000, -32000)
                     except Exception:
                         pass
+
+                    # Start persistent Chrome-hiding thread for new tabs
+                    threading.Thread(
+                        target=_keep_chrome_hidden,
+                        args=(session_id,),
+                        daemon=True
+                    ).start()
+                    logger.info('Started persistent Chrome window hider')
 
                     if session_id in browser_sessions:
                         browser_sessions[session_id]['state'] = 'logged_in'
