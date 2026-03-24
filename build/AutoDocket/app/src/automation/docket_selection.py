@@ -1,0 +1,803 @@
+"""
+Docket selection module for WestLaw Precision.
+Handles selecting "Dockets" from the Content Types after login.
+"""
+
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from src.utils.logger import get_logger
+from src.utils.screenshot import ScreenshotManager
+from src.utils.smart_waits import SmartWaits
+import time
+
+logger = get_logger(__name__)
+
+
+class DocketSelector:
+    """Handles docket selection in WestLaw Precision."""
+
+    def __init__(self):
+        """Initialize the docket selector."""
+        self.screenshot_manager = ScreenshotManager()
+
+    def select_docket(self, driver, category=None, specific_docket=None, district=None, docket_number=None) -> bool:
+        """
+        Select "Dockets" from Content Types in WestLaw Precision,
+        and optionally select a specific category, docket, district, and search by docket number.
+
+        Args:
+            driver: Selenium WebDriver object
+            category: Optional category name (e.g., "Dockets by State")
+            specific_docket: Optional specific docket name (e.g., "California")
+            district: Optional district name (e.g., "Southern District")
+            docket_number: Optional docket number to search (e.g., "1:25-CV-01815")
+
+        Returns:
+            True if selection successful, False otherwise
+
+        Raises:
+            Exception: If selection fails
+        """
+        try:
+            logger.info("Starting docket selection...")
+            if category:
+                logger.info(f"Category: {category}")
+            if specific_docket:
+                logger.info(f"Specific docket: {specific_docket}")
+            if district:
+                logger.info(f"District: {district}")
+            if docket_number:
+                logger.info(f"Docket Number: {docket_number}")
+
+            from selenium.webdriver.support.ui import WebDriverWait
+            from selenium.webdriver.support import expected_conditions as EC
+
+            # Wait for page to load
+            logger.info("Waiting for page to load completely...")
+            SmartWaits.wait_for_page_ready(driver, timeout=6)
+
+            logger.info(f"Current URL: {driver.current_url}")
+            self.screenshot_manager.capture(driver, "before_content_types_search")
+
+            # Click on "Content types" tab in the navigation
+            logger.info("Looking for 'Content types' tab in navigation...")
+
+            # Try to find Content types tab in navigation
+            content_types_selectors = [
+                '//*[@id="tab3"]',  # Direct ID from HTML
+                '//li[contains(text(), "Content types")]',
+                '//li[@role="tab"][contains(text(), "Content types")]',
+                '//li[@class="Tab"][contains(text(), "Content types")]',
+                '//*[@role="tab" and contains(text(), "Content types")]',
+                '//a[contains(text(), "Content types")]',
+                '//button[contains(text(), "Content types")]'
+            ]
+
+            content_types_element = None
+            for selector in content_types_selectors:
+                try:
+                    # Use shorter wait for each attempt
+                    short_wait = WebDriverWait(driver, 2)
+                    logger.info(f"Trying: {selector}")
+                    content_types_element = short_wait.until(
+                        EC.presence_of_element_located((By.XPATH, selector))
+                    )
+                    logger.info(f"✓ Found Content Types with: {selector}")
+
+                    # Scroll into view and click
+                    driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", content_types_element)
+                    driver.execute_script("arguments[0].click();", content_types_element)
+                    logger.info("✓ Clicked Content Types section")
+                    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+                    self.screenshot_manager.capture(driver, "after_clicking_content_types")
+                    logger.info("Screenshot saved: after_clicking_content_types")
+                    break
+                except Exception as e:
+                    continue
+
+            if not content_types_element:
+                logger.error("FAILED: Content Types section not found with any selector")
+                self.screenshot_manager.capture_on_error(driver, "content_types_not_found")
+                # Save page source for debugging
+                try:
+                    with open("debug_page_source.html", "w", encoding="utf-8") as f:
+                        f.write(driver.page_source)
+                    logger.info("Saved page source to debug_page_source.html")
+                except:
+                    pass
+                raise Exception("Cannot find Content Types section on page")
+
+            # Find and click "Dockets" option
+            logger.info("Looking for 'Dockets' option...")
+
+            dockets_selectors = [
+                '//span[contains(text(), "Dockets")]',
+                '//div[contains(text(), "Dockets")]',
+                '//a[contains(text(), "Dockets")]',
+                '//button[contains(text(), "Dockets")]',
+                '//label[contains(text(), "Dockets")]',
+                '//*[text()="Dockets"]',
+                '//*[contains(text(), "Docket")]'
+            ]
+
+            dockets_element = None
+            for selector in dockets_selectors:
+                try:
+                    short_wait = WebDriverWait(driver, 2)
+                    logger.info(f"Trying: {selector}")
+                    dockets_element = short_wait.until(
+                        EC.element_to_be_clickable((By.XPATH, selector))
+                    )
+                    logger.info(f"✓ Found Dockets with: {selector}")
+                    break
+                except Exception as e:
+                    continue
+
+            if not dockets_element:
+                logger.error("FAILED: Dockets element not found with any selector")
+                self.screenshot_manager.capture_on_error(driver, "dockets_not_found")
+                # Save page source
+                try:
+                    with open("debug_page_after_content_types.html", "w", encoding="utf-8") as f:
+                        f.write(driver.page_source)
+                    logger.info("Saved page source to debug_page_after_content_types.html")
+                except:
+                    pass
+                raise Exception("Cannot find Dockets option after clicking Content Types")
+
+            logger.info("Clicking Dockets...")
+            driver.execute_script("arguments[0].click();", dockets_element)
+            logger.info("✓ Successfully clicked Dockets")
+            SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+            self.screenshot_manager.capture(driver, "after_clicking_dockets")
+            logger.info("Screenshot saved: after_clicking_dockets")
+
+            # If category and specific_docket are provided, continue with hierarchical selection
+            if category and specific_docket:
+                # Wait for docket options to appear
+                logger.info(f"Waiting for docket categories to load...")
+                time.sleep(2)
+
+                # Define wait with longer timeout for category selection
+                category_wait = WebDriverWait(driver, 10)
+
+                # Find and click the category
+                logger.info(f"Looking for category: {category}")
+                try:
+                    category_element = category_wait.until(
+                        EC.element_to_be_clickable((By.XPATH, f'//*[contains(text(), "{category}")]'))
+                    )
+                    logger.info(f"✓ Found category: {category}")
+                    driver.execute_script("arguments[0].click();", category_element)
+                    logger.info(f"✓ Clicked on category: {category}")
+                    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+                except Exception as e:
+                    logger.error(f"Failed to find category '{category}': {str(e)}")
+                    self.screenshot_manager.capture_on_error(driver, "category_not_found")
+                    raise
+
+                # Wait for specific docket options to appear after page navigation
+                logger.info(f"Waiting for specific dockets page to load...")
+                SmartWaits.wait_for_page_ready(driver, timeout=3)
+
+                # Find and click the specific docket (try multiple selectors)
+                logger.info(f"Looking for specific docket: {specific_docket}")
+
+                # Take screenshot before searching
+
+                try:
+                    docket_wait = WebDriverWait(driver, 15)
+
+                    # Try multiple selectors for state links
+                    state_selectors = [
+                        f'//a[text()="{specific_docket}"]',  # Exact match for link
+                        f'//a[contains(text(), "{specific_docket}")]',  # Contains match for link
+                        f'//*[@href and contains(text(), "{specific_docket}")]',  # Any element with href containing text
+                        f'//*[text()="{specific_docket}"]',  # Exact text match
+                        f'//*[contains(text(), "{specific_docket}")]'  # General contains match
+                    ]
+
+                    docket_element = None
+                    for selector in state_selectors:
+                        try:
+                            logger.info(f"Trying state selector: {selector}")
+                            docket_element = docket_wait.until(
+                                EC.element_to_be_clickable((By.XPATH, selector))
+                            )
+                            logger.info(f"✓ Found specific docket with: {selector}")
+                            break
+                        except Exception as e:
+                            logger.debug(f"Selector failed: {selector} - {str(e)}")
+                            continue
+
+                    if not docket_element:
+                        logger.error("Failed to find specific docket with any selector")
+                        self.screenshot_manager.capture_on_error(driver, "specific_docket_not_found")
+                        raise Exception(f"Cannot find state: {specific_docket}")
+
+                    logger.info(f"✓ Found specific docket: {specific_docket}")
+
+                    # Scroll into view before clicking
+                    driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", docket_element)
+
+                    driver.execute_script("arguments[0].click();", docket_element)
+                    logger.info(f"✓ Clicked on specific docket: {specific_docket}")
+                    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+                    self.screenshot_manager.capture(driver, "after_clicking_specific_docket")
+                except Exception as e:
+                    logger.error(f"Failed to find specific docket '{specific_docket}': {str(e)}")
+                    self.screenshot_manager.capture_on_error(driver, "specific_docket_not_found")
+                    raise
+
+                # If district is provided, select the district
+                if district:
+                    # Wait for district options to appear
+                    logger.info(f"Waiting for district options to load...")
+                    SmartWaits.wait_for_page_ready(driver, timeout=3)
+
+                    # Find and click the district
+                    logger.info(f"Looking for district: {district}")
+
+                    try:
+                        district_wait = WebDriverWait(driver, 15)
+
+                        # Try multiple selectors for district links
+                        district_selectors = [
+                            f'//a[text()="{district}"]',  # Exact match for link
+                            f'//a[contains(text(), "{district}")]',  # Contains match for link
+                            f'//*[@href and contains(text(), "{district}")]',  # Any element with href
+                            f'//*[text()="{district}"]',  # Exact text match
+                            f'//*[contains(text(), "{district}")]'  # General contains match
+                        ]
+
+                        district_element = None
+                        for selector in district_selectors:
+                            try:
+                                logger.info(f"Trying district selector: {selector}")
+                                district_element = district_wait.until(
+                                    EC.element_to_be_clickable((By.XPATH, selector))
+                                )
+                                logger.info(f"✓ Found district with: {selector}")
+                                break
+                            except Exception as e:
+                                logger.debug(f"Selector failed: {selector} - {str(e)}")
+                                continue
+
+                        if not district_element:
+                            logger.error("Failed to find district with any selector")
+                            self.screenshot_manager.capture_on_error(driver, "district_not_found")
+                            raise Exception(f"Cannot find district: {district}")
+
+                        logger.info(f"✓ Found district: {district}")
+
+                        # Scroll into view before clicking
+                        driver.execute_script("arguments[0].scrollIntoView({behavior: 'smooth', block: 'center'});", district_element)
+
+                        driver.execute_script("arguments[0].click();", district_element)
+                        logger.info(f"✓ Clicked on district: {district}")
+                        SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+                        self.screenshot_manager.capture(driver, "after_clicking_district")
+                    except Exception as e:
+                        logger.error(f"Failed to find district '{district}': {str(e)}")
+                        self.screenshot_manager.capture_on_error(driver, "district_selection_error")
+                        raise
+
+                # If docket_number is provided, search for the docket
+                if docket_number:
+                    # Wait for docket number input field to appear
+                    logger.info(f"Waiting for docket number input field...")
+
+                    # Find and fill the docket number input field
+                    logger.info("=" * 60)
+                    logger.info("FINDING DOCKET NUMBER INPUT FIELD")
+                    logger.info("=" * 60)
+                    logger.info(f"Taking screenshot before searching for input...")
+
+                    try:
+                        docket_wait = WebDriverWait(driver, 5)  # Reduced from 15s - working selectors are first
+
+                        # Log ALL text inputs on the page for debugging
+                        logger.info("LISTING ALL TEXT INPUTS ON PAGE:")
+                        all_inputs = driver.find_elements(By.XPATH, '//input[@type="text"]')
+                        logger.info(f"Found {len(all_inputs)} text input fields")
+
+                        for i, inp in enumerate(all_inputs):
+                            try:
+                                inp_id = inp.get_attribute("id") or "NO_ID"
+                                inp_name = inp.get_attribute("name") or "NO_NAME"
+                                inp_placeholder = inp.get_attribute("placeholder") or "NO_PLACEHOLDER"
+                                logger.info(f"  Input[{i}]: id='{inp_id}', name='{inp_name}', placeholder='{inp_placeholder}'")
+                            except:
+                                pass
+
+                        # Try SPECIFIC selectors for the actual Docket Number field on the LEFT
+                        logger.info("\nTrying specific selectors for 'Docket Number' field...")
+                        input_selectors = [
+                            # PRIORITY: Known working selectors first for speed
+                            (By.ID, "co_search_advancedSearch_DN"),  # DN = Docket Number (WORKING)
+                            (By.NAME, "co_search_advancedSearch_DN"),  # DN = Docket Number (WORKING)
+                            (By.XPATH, '//label[contains(text(), "Docket Number")]/..//input'),  # WORKING
+                            # Fallback selectors
+                            (By.ID, "docketNumber"),
+                            (By.NAME, "docketNumber"),
+                            (By.XPATH, '//label[text()="Docket Number"]/following-sibling::input'),
+                            (By.XPATH, '//input[@placeholder="Docket Number"]'),
+                            (By.XPATH, '//input[@id="docketNumber"]'),
+                        ]
+
+                        input_element = None
+                        for by, selector in input_selectors:
+                            try:
+                                logger.info(f"  Trying: {by}={selector}")
+                                input_element = docket_wait.until(
+                                    EC.presence_of_element_located((by, selector))
+                                )
+                                inp_id = input_element.get_attribute("id")
+                                inp_name = input_element.get_attribute("name")
+                                logger.info(f"  ✓ FOUND with id='{inp_id}', name='{inp_name}'")
+                                break
+                            except Exception as e:
+                                logger.debug(f"  ✗ Failed: {str(e)[:50]}")
+                                continue
+
+                        if not input_element:
+                            logger.error("SPECIFIC SELECTORS FAILED! Trying to find by label...")
+                            # Find the label "Docket Number" and get nearby input
+                            try:
+                                logger.info("Looking for 'Docket Number' label...")
+                                all_labels = driver.find_elements(By.TAG_NAME, "label")
+                                for label in all_labels:
+                                    if "docket number" in label.text.lower() and "participant" not in label.text.lower():
+                                        logger.info(f"Found label: '{label.text}'")
+                                        # Try to get input via 'for' attribute
+                                        label_for = label.get_attribute("for")
+                                        if label_for:
+                                            input_element = driver.find_element(By.ID, label_for)
+                                            logger.info(f"✓ Found input via label 'for' attribute: {label_for}")
+                                            break
+                            except Exception as e:
+                                logger.error(f"Label search failed: {e}")
+
+                        if not input_element:
+                            logger.error("=" * 60)
+                            logger.error("CRITICAL: CANNOT FIND DOCKET NUMBER INPUT FIELD")
+                            logger.error("=" * 60)
+                            self.screenshot_manager.capture_on_error(driver, "docket_input_not_found_CRITICAL")
+                            raise Exception("Cannot find docket number input field")
+
+                        logger.info("=" * 60)
+                        logger.info(f"✓ SUCCESS: Found docket number input field")
+                        logger.info(f"  ID: {input_element.get_attribute('id')}")
+                        logger.info(f"  Name: {input_element.get_attribute('name')}")
+                        logger.info(f"  Placeholder: {input_element.get_attribute('placeholder')}")
+                        logger.info("=" * 60)
+
+                        # Clear and enter the docket number
+                        logger.info(f"Entering docket number: {docket_number}")
+
+                        # CRITICAL: Remove maxlength attribute that restricts input to 9 chars
+                        try:
+                            driver.execute_script("arguments[0].removeAttribute('maxlength');", input_element)
+                            logger.info("✓ Removed maxlength restriction")
+                        except Exception as e:
+                            logger.warning(f"Could not remove maxlength: {e}")
+
+                        input_element.clear()
+                        time.sleep(0.3)  # CRITICAL - allow browser to process before typing
+
+                        # Enter docket number and verify
+                        input_element.send_keys(docket_number)
+                        time.sleep(0.5)  # CRITICAL - allow full text to register before validation
+
+                        # Verify the value was entered correctly
+                        entered_value = input_element.get_attribute('value')
+                        logger.info(f"Value in field: '{entered_value}'")
+
+                        if entered_value != docket_number:
+                            logger.warning(f"Value mismatch! Expected: '{docket_number}', Got: '{entered_value}'")
+                            logger.info("Retrying with slower input...")
+
+                            # CRITICAL: Remove maxlength again (page JS may have re-added it)
+                            try:
+                                driver.execute_script("arguments[0].removeAttribute('maxlength');", input_element)
+                                logger.info("✓ Removed maxlength attribute (retry)")
+                            except Exception as e:
+                                logger.warning(f"Could not remove maxlength on retry: {e}")
+
+                            input_element.clear()
+                            time.sleep(0.5)
+                            # Type character by character for reliability
+                            for char in docket_number:
+                                input_element.send_keys(char)
+                                time.sleep(0.05)  # Small delay between characters
+                            time.sleep(0.3)
+                            entered_value = input_element.get_attribute('value')
+                            logger.info(f"After retry, value in field: '{entered_value}'")
+
+                        logger.info(f"✓ Entered: {entered_value}")
+                        time.sleep(0.2)  # Reduced - text already verified above
+                        logger.info("Taking screenshot AFTER entering docket number...")
+                        self.screenshot_manager.capture(driver, "after_entering_docket_number")
+
+                        # Find and click ONLY the orange search icon at top right (NOT KNOS or any modal buttons)
+                        logger.info("=" * 60)
+                        logger.info("FINDING ORANGE SEARCH BUTTON AT TOP RIGHT")
+                        logger.info("=" * 60)
+                        logger.info("Taking screenshot BEFORE searching for button...")
+
+                        # First, make sure any modals are closed
+                        try:
+                            close_buttons = driver.find_elements(By.XPATH, '//button[contains(text(), "Close") or contains(@aria-label, "Close")]')
+                            if close_buttons:
+                                logger.info(f"Found {len(close_buttons)} close buttons, closing modals...")
+                            for btn in close_buttons:
+                                try:
+                                    btn.click()
+                                    logger.info("✓ Closed a modal/popup")
+                                    time.sleep(0.5)
+                                except:
+                                    pass
+                        except:
+                            pass
+
+                        search_selectors = [
+                            # PRIORITY: Known working selectors first for speed
+                            (By.ID, "searchButton"),  # Direct ID (FASTEST - WORKING)
+                            (By.XPATH, '//button[@id="searchButton"]'),  # Direct ID xpath (WORKING)
+                            (By.XPATH, '//div[contains(@class, "header") or contains(@class, "nav")]//button[contains(@aria-label, "Search") and not(contains(@aria-label, "KNOS"))]'),  # WORKING
+                            # Fallback selectors
+                            (By.XPATH, '//button[contains(@class, "co_searchButton") and not(contains(@id, "KNOS"))]'),
+                            (By.XPATH, '//button[@aria-label="Search Westlaw" and not(contains(@id, "KNOS"))]'),
+                            (By.XPATH, '//button[contains(@class, "co_search") and not(contains(@id, "KNOS")) and not(contains(@class, "advancedSearch"))]'),
+                            (By.XPATH, '//button[@title="Search" and not(contains(@id, "KNOS"))]'),
+                            (By.CSS_SELECTOR, 'button.co_searchButton:not([id*="KNOS"])'),
+                            # Look in header/nav specifically, but exclude KNOS
+                            (By.XPATH, '//header//button[.//*[local-name()="svg"] and not(contains(@id, "KNOS"))]'),
+                            (By.XPATH, '//nav//button[.//*[local-name()="svg"] and not(contains(@id, "KNOS"))]'),
+                        ]
+
+                        search_button = None
+                        for by, selector in search_selectors:
+                            try:
+                                logger.info(f"Trying search button selector: {by}={selector}")
+                                search_button = docket_wait.until(
+                                    EC.element_to_be_clickable((by, selector))
+                                )
+                                logger.info(f"✓ Found search button with: {by}={selector}")
+                                break
+                            except Exception as e:
+                                logger.debug(f"Selector failed: {by}={selector} - {str(e)}")
+                                continue
+
+                        # If standard selectors didn't work, try finding all buttons and log them
+                        if not search_button:
+                            logger.warning("Standard selectors failed. Trying to find all buttons in header/nav area...")
+                            try:
+                                # Get buttons specifically from header/nav to avoid KNOS and form buttons
+                                header_buttons = []
+                                try:
+                                    header_buttons.extend(driver.find_elements(By.XPATH, '//header//button'))
+                                    header_buttons.extend(driver.find_elements(By.XPATH, '//nav//button'))
+                                except:
+                                    pass
+
+                                logger.info(f"Found {len(header_buttons)} buttons in header/nav area")
+
+                                # Look through header buttons for the search icon
+                                for i, btn in enumerate(header_buttons):
+                                    try:
+                                        btn_class = btn.get_attribute("class") or ""
+                                        btn_id = btn.get_attribute("id") or ""
+                                        btn_aria = btn.get_attribute("aria-label") or ""
+                                        btn_text = btn.text or ""
+                                        logger.info(f"Header Button {i}: class='{btn_class}', id='{btn_id}', aria='{btn_aria}', text='{btn_text}'")
+
+                                        # AVOID KNOS explicitly - check ID, class, aria-label, and text
+                                        if "knos" in btn_class.lower() or "knos" in btn_id.lower() or "knos" in btn_text.lower() or "knos" in btn_aria.lower():
+                                            logger.info(f"  → Skipping KNOS button")
+                                            continue
+
+                                        # Look for search-related keywords
+                                        if any(keyword in btn_class.lower() for keyword in ["search", "co_search", "searchbutton"]) or \
+                                           "search" in btn_aria.lower():
+                                            search_button = btn
+                                            logger.info(f"✓ Found search button in header at index {i}")
+                                            break
+                                    except:
+                                        continue
+                            except Exception as e:
+                                logger.error(f"Failed to enumerate header buttons: {e}")
+
+                        if not search_button:
+                            logger.error("=" * 60)
+                            logger.error("CRITICAL: CANNOT FIND SEARCH BUTTON")
+                            logger.error("=" * 60)
+                            self.screenshot_manager.capture_on_error(driver, "search_button_not_found_CRITICAL")
+                            raise Exception("Cannot find orange search button")
+
+                        logger.info("=" * 60)
+                        logger.info("✓ SUCCESS: Found search button!")
+                        logger.info(f"  Button class: {search_button.get_attribute('class')}")
+                        logger.info(f"  Button ID: {search_button.get_attribute('id')}")
+                        logger.info(f"  Button aria-label: {search_button.get_attribute('aria-label')}")
+                        logger.info("=" * 60)
+
+                        logger.info("Taking screenshot BEFORE clicking search button...")
+                        self.screenshot_manager.capture(driver, "before_clicking_search")
+
+                        # Try regular click first, then JavaScript click if needed
+                        logger.info("Clicking the orange search button...")
+                        try:
+                            search_button.click()
+                            logger.info(f"✓ Clicked search button (regular click)")
+                        except Exception as e:
+                            logger.warning(f"Regular click failed: {e}")
+                            logger.warning("Trying JavaScript click...")
+                            driver.execute_script("arguments[0].click();", search_button)
+                            logger.info(f"✓ Clicked search button (JavaScript click)")
+
+                        logger.info("Waiting for search results...")
+                        SmartWaits.wait_for_ajax_complete(driver, timeout=3)  # Search may load results
+                        logger.info("Taking screenshot AFTER clicking search...")
+                        self.screenshot_manager.capture(driver, "after_clicking_search")
+                        logger.info("=" * 60)
+                        logger.info("✓ SEARCH COMPLETED")
+                        logger.info("=" * 60)
+
+                    except Exception as e:
+                        logger.error(f"Failed to search docket number '{docket_number}': {str(e)}")
+                        self.screenshot_manager.capture_on_error(driver, "docket_search_error")
+                        raise
+
+            logger.info("Docket selection completed successfully")
+            return True
+
+        except Exception as e:
+            logger.error(f"Docket selection failed: {e}")
+            self.screenshot_manager.capture_on_error(driver, "docket_selection_error")
+            raise
+
+    # ------------------------------------------------------------------
+    # Granular methods for multi-docket tab-based processing
+    # ------------------------------------------------------------------
+
+    def navigate_to_state_page(self, driver, category: str = "Dockets by State") -> str:
+        """
+        Navigate Content Types → Dockets → Category and return the URL
+        of the 'Select the state:' page. Stops before clicking any state.
+        """
+        try:
+            logger.info(f"navigate_to_state_page: category='{category}'")
+            SmartWaits.wait_for_page_ready(driver, timeout=6)
+
+            # --- Click Content Types ---
+            content_types_selectors = [
+                '//*[@id="tab3"]',
+                '//li[contains(text(), "Content types")]',
+                '//li[@role="tab"][contains(text(), "Content types")]',
+                '//li[@class="Tab"][contains(text(), "Content types")]',
+                '//*[@role="tab" and contains(text(), "Content types")]',
+                '//a[contains(text(), "Content types")]',
+                '//button[contains(text(), "Content types")]',
+            ]
+            ct_element = None
+            for sel in content_types_selectors:
+                try:
+                    ct_element = WebDriverWait(driver, 2).until(
+                        EC.presence_of_element_located((By.XPATH, sel))
+                    )
+                    driver.execute_script("arguments[0].scrollIntoView({block:'center'});", ct_element)
+                    driver.execute_script("arguments[0].click();", ct_element)
+                    SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+                    logger.info(f"✓ Clicked Content Types via: {sel}")
+                    break
+                except Exception:
+                    continue
+            if not ct_element:
+                raise Exception("Cannot find Content Types tab")
+
+            # --- Click Dockets ---
+            dockets_selectors = [
+                '//span[contains(text(), "Dockets")]',
+                '//div[contains(text(), "Dockets")]',
+                '//a[contains(text(), "Dockets")]',
+                '//*[text()="Dockets"]',
+                '//*[contains(text(), "Docket")]',
+            ]
+            dockets_element = None
+            for sel in dockets_selectors:
+                try:
+                    dockets_element = WebDriverWait(driver, 2).until(
+                        EC.element_to_be_clickable((By.XPATH, sel))
+                    )
+                    logger.info(f"✓ Found Dockets via: {sel}")
+                    break
+                except Exception:
+                    continue
+            if not dockets_element:
+                raise Exception("Cannot find Dockets option")
+            driver.execute_script("arguments[0].click();", dockets_element)
+            SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+            logger.info("✓ Clicked Dockets")
+
+            # --- Click Category (e.g. "Dockets by State") ---
+            time.sleep(2)
+            category_element = WebDriverWait(driver, 10).until(
+                EC.element_to_be_clickable((By.XPATH, f'//*[contains(text(), "{category}")]'))
+            )
+            driver.execute_script("arguments[0].click();", category_element)
+            SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+            logger.info(f"✓ Clicked category: {category}")
+
+            # Wait for state selection page to fully render
+            SmartWaits.wait_for_page_ready(driver, timeout=3)
+            state_page_url = driver.current_url
+            logger.info(f"✓ State page URL captured: {state_page_url}")
+            return state_page_url
+
+        except Exception as e:
+            logger.error(f"navigate_to_state_page failed: {e}")
+            self.screenshot_manager.capture_on_error(driver, "navigate_to_state_page_error")
+            raise
+
+    def select_state_from_page(self, driver, state: str) -> bool:
+        """
+        Select a state by clicking its link on the current 'Select the state:' page.
+        Assumes the driver is already on the state selection page.
+        """
+        try:
+            logger.info(f"select_state_from_page: state='{state}'")
+            state_selectors = [
+                f'//a[text()="{state}"]',
+                f'//a[contains(text(), "{state}")]',
+                f'//*[@href and contains(text(), "{state}")]',
+                f'//*[text()="{state}"]',
+                f'//*[contains(text(), "{state}")]',
+            ]
+            docket_wait = WebDriverWait(driver, 15)
+            state_element = None
+            for sel in state_selectors:
+                try:
+                    state_element = docket_wait.until(
+                        EC.element_to_be_clickable((By.XPATH, sel))
+                    )
+                    logger.info(f"✓ Found state link via: {sel}")
+                    break
+                except Exception:
+                    continue
+            if not state_element:
+                raise Exception(f"Cannot find state link: {state}")
+            driver.execute_script("arguments[0].scrollIntoView({behavior:'smooth',block:'center'});", state_element)
+            driver.execute_script("arguments[0].click();", state_element)
+            SmartWaits.wait_for_ajax_complete(driver, timeout=2)
+            logger.info(f"✓ Clicked state: {state}")
+            return True
+
+        except Exception as e:
+            logger.error(f"select_state_from_page failed: {e}")
+            self.screenshot_manager.capture_on_error(driver, "select_state_from_page_error")
+            raise
+
+    def search_docket_number(self, driver, docket_number: str) -> bool:
+        """
+        Enter a docket number into the search field (with critical maxlength removal
+        and char-by-char fallback) and click the search button.
+        Assumes the driver is on a page that shows the docket number input.
+        """
+        try:
+            logger.info(f"search_docket_number: '{docket_number}'")
+            docket_wait = WebDriverWait(driver, 5)
+
+            input_selectors = [
+                (By.ID, "co_search_advancedSearch_DN"),
+                (By.NAME, "co_search_advancedSearch_DN"),
+                (By.XPATH, '//label[contains(text(), "Docket Number")]/..//input'),
+                (By.ID, "docketNumber"),
+                (By.NAME, "docketNumber"),
+            ]
+            input_element = None
+            for by, sel in input_selectors:
+                try:
+                    input_element = docket_wait.until(
+                        EC.presence_of_element_located((by, sel))
+                    )
+                    logger.info(f"✓ Found docket input via: {by}={sel}")
+                    break
+                except Exception:
+                    continue
+            if not input_element:
+                raise Exception("Cannot find docket number input field")
+
+            # CRITICAL: Remove maxlength AND install MutationObserver to prevent
+            # WestLaw's JS from re-adding it (race condition on original tab)
+            try:
+                driver.execute_script("""
+                    var el = arguments[0];
+                    el.removeAttribute('maxlength');
+                    if (!el.__maxlengthObserver) {
+                        var obs = new MutationObserver(function(mutations) {
+                            mutations.forEach(function(m) {
+                                if (m.type === 'attributes' && m.attributeName === 'maxlength') {
+                                    el.removeAttribute('maxlength');
+                                }
+                            });
+                        });
+                        obs.observe(el, {attributes: true});
+                        el.__maxlengthObserver = obs;
+                    }
+                """, input_element)
+                logger.info("✓ Removed maxlength + installed MutationObserver guard")
+            except Exception as e:
+                logger.warning(f"Could not remove maxlength: {e}")
+
+            # Primary method: Set value via JavaScript (bypasses maxlength entirely)
+            input_element.click()
+            time.sleep(0.1)
+            driver.execute_script("""
+                var el = arguments[0];
+                el.value = '';
+                el.value = arguments[1];
+                el.dispatchEvent(new Event('input', {bubbles: true}));
+                el.dispatchEvent(new Event('change', {bubbles: true}));
+            """, input_element, docket_number)
+            time.sleep(0.3)
+
+            # Verify the value
+            entered_value = input_element.get_attribute("value")
+            if entered_value != docket_number:
+                logger.warning(f"JS value set mismatch! Expected '{docket_number}', got '{entered_value}'. Retrying with send_keys char-by-char...")
+                # Fallback: clear and type char-by-char (MutationObserver still active)
+                input_element.clear()
+                time.sleep(0.3)
+                for char in docket_number:
+                    input_element.send_keys(char)
+                    time.sleep(0.05)
+                time.sleep(0.3)
+                entered_value = input_element.get_attribute("value")
+                logger.info(f"After char-by-char retry: '{entered_value}'")
+
+            # Hard error if STILL truncated — do not silently search wrong number
+            if entered_value != docket_number:
+                raise Exception(
+                    f"Docket number entry failed after retry. "
+                    f"Expected '{docket_number}', got '{entered_value}'"
+                )
+
+            logger.info(f"✓ Docket number in field: '{entered_value}'")
+
+            # Find and click search button
+            search_selectors = [
+                (By.ID, "searchButton"),
+                (By.XPATH, '//button[@id="searchButton"]'),
+            ]
+            search_button = None
+            for by, sel in search_selectors:
+                try:
+                    search_button = docket_wait.until(
+                        EC.element_to_be_clickable((by, sel))
+                    )
+                    logger.info(f"✓ Found search button via: {by}={sel}")
+                    break
+                except Exception:
+                    continue
+            if not search_button:
+                raise Exception("Cannot find search button")
+
+            try:
+                search_button.click()
+            except Exception:
+                driver.execute_script("arguments[0].click();", search_button)
+            logger.info("✓ Clicked search button")
+
+            SmartWaits.wait_for_page_ready(driver, timeout=10)
+            SmartWaits.wait_for_ajax_complete(driver, timeout=5)
+            driver.execute_script("window.scrollTo({top:0,behavior:'instant'});")
+            time.sleep(0.5)
+            logger.info("✓ Search complete")
+            return True
+
+        except Exception as e:
+            logger.error(f"search_docket_number failed: {e}")
+            self.screenshot_manager.capture_on_error(driver, "search_docket_number_error")
+            raise
